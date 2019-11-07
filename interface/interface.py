@@ -27,8 +27,11 @@ class trackerApp(QDialog):
         self.createEvalType()
         self.createSequenceList()
         self.createChallengeList()
+        self.createMetricsList()
+        
         run_eval = QPushButton("Run")
-    
+        run_eval.clicked.connect(self.passEvaluatorConfig)
+        
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.loadFiles,1,0)
         mainLayout.addWidget(self.trackerList, 2, 0 )
@@ -39,7 +42,8 @@ class trackerApp(QDialog):
         mainLayout.addWidget(self.evalType, 0, 1,1,2 )
         mainLayout.addWidget(self.sequences, 1,1 )
         mainLayout.addWidget(self.challenges, 1,2 )
-        mainLayout.addWidget(run_eval,2,1)
+        mainLayout.addWidget(self.metrics, 2,1 )
+        mainLayout.addWidget(run_eval,2,2)
         self.setLayout(mainLayout)
         
         
@@ -93,7 +97,6 @@ class trackerApp(QDialog):
         
         self.radioButton1.toggled.connect(self.check_eval_type)
 
-        
         layout = QVBoxLayout()
         layout.addWidget(self.radioButton1)
         layout.addWidget(self.radioButton2)
@@ -137,6 +140,20 @@ class trackerApp(QDialog):
         layout.addWidget(CheckBox4)
         layout.addWidget(CheckBox5)
         self.challenges.setLayout(layout) 
+    
+    def createMetricsList(self):
+        self.metrics = QGroupBox("Metrics")
+        
+        CheckBox1 = QCheckBox("Accuracy")
+        CheckBox2 = QCheckBox("Robustness")
+        CheckBox3 = QCheckBox("Precision(Center Location Error)")
+
+        layout = QVBoxLayout()
+        layout.addWidget(CheckBox1)
+        layout.addWidget(CheckBox2)
+        layout.addWidget(CheckBox3)
+        self.metrics.setLayout(layout) 
+        
         
     def check_eval_type(self):
         if (self.radioButton2.isChecked()):
@@ -150,6 +167,13 @@ class trackerApp(QDialog):
             self.challenges.setEnabled(True)
         self.listwidget.repaint()
         self.update()
+        
+        
+    def passEvaluatorConfig(self):
+        #call callback for the evaluator
+        print("Start Evaluation")
+        return
+        
         
 
 if __name__ == "__main__":
