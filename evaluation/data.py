@@ -55,11 +55,11 @@ def load_data(data_path, sequences, trackers, experiment_name, sample_number):
                     groundtruth.append(currentline)
             groundtruth = np.array(groundtruth)
             
-            cm = 0
-            ic = 0
-            mc = 0
-            occ = 0
-            sc = 0
+            cm = np.zeros(len(groundtruth))
+            ic = np.zeros(len(groundtruth))
+            mc = np.zeros(len(groundtruth))
+            occ = np.zeros(len(groundtruth))
+            sc = np.zeros(len(groundtruth))
             if os.path.isfile(gt_path + '\camera_motion.tag'):
                 cm = np.loadtxt(gt_path + '\camera_motion.tag').astype(np.int)
             if os.path.isfile(gt_path +'\illum_change.tag'):
@@ -77,8 +77,8 @@ def load_data(data_path, sequences, trackers, experiment_name, sample_number):
     
     ##Test prints
     ##So accessing is data[tracker][sequence]['Key']([x][y] for individual values in the groundtruth or output
-    print(data['DSiam']['ants1']['output'][3][3])
-    print(data['ECO']['butterfly']['groundtruth'][0])
+  #  print(data['DSiam']['ants1']['output'][3][3])
+   # print(data['ECO']['butterfly']['groundtruth'][0])
     
     return data
 
