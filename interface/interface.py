@@ -9,7 +9,25 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QFileInfo
 
-def interface_main():
+g_sequences = []
+g_trackers = []
+
+chall_available = ["Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
+metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
+
+#final global outputs of interface
+trackers_paths = []
+trackers_extra = []
+eval_type = []
+sequences_final = []
+challenges_final = []
+metrics = []
+
+def interface_main(sequences,trackers):
+    global g_sequences
+    global g_trackers
+    g_trackers = trackers
+    g_sequences = sequences
     app = QApplication(sys.argv)
     track_app = trackerApp()
     track_app.show()
@@ -65,6 +83,9 @@ class trackerApp(QDialog):
        fname = QFileDialog.getOpenFileName(self, 'Open file', 
          'c:\\',"Text Files (*.txt)")
        fi = QFileInfo(fname[0])
+
+       global trackers_paths
+       trackers_paths.append(fname[0])
        self.trackers_res.append(fi.baseName())
        # update List Options
        self.listwidget.insertItem(len(self.trackers_res),"%s" % fi.baseName())
@@ -76,15 +97,16 @@ class trackerApp(QDialog):
     def createSelectTrackers(self):
         self.trackerList = QGroupBox("Add trackers in the analysis")
 
-        CheckBox1 = QCheckBox("SIAMESE 1")
-        CheckBox2 = QCheckBox("GoogleNet")
-        CheckBox3 = QCheckBox("ResNet")
-        CheckBox1.setChecked(True)
-
         layout = QVBoxLayout()
-        layout.addWidget(CheckBox1)
-        layout.addWidget(CheckBox2)
-        layout.addWidget(CheckBox3)
+        counter = 0;
+        self.CheckBox_tr = [];
+        for track in g_trackers:
+            self.CheckBox_tr.append(QCheckBox(track))
+            layout.addWidget(self.CheckBox_tr[counter])
+            counter = counter+1;
+    
+        self.CheckBox_tr[0].setChecked(True)
+
         layout.addStretch(1)
         self.trackerList.setLayout(layout) 
         
@@ -105,53 +127,46 @@ class trackerApp(QDialog):
     def createSequenceList(self):
         self.sequences = QGroupBox("Sequences available")
         
-        CheckBox1 = QCheckBox("basketball")
-        CheckBox2 = QCheckBox("fernando")
-        CheckBox3 = QCheckBox("girl")
-        CheckBox4 = QCheckBox("graduate")
-        CheckBox5 = QCheckBox("iceskater1")
-        CheckBox6 = QCheckBox("matrix")
-        CheckBox6 = QCheckBox("nature")
-        CheckBox7 = QCheckBox("tiger")
-        
         layout = QVBoxLayout()
-        layout.addWidget(CheckBox1)
-        layout.addWidget(CheckBox2)
-        layout.addWidget(CheckBox3)
-        layout.addWidget(CheckBox4)
-        layout.addWidget(CheckBox5)
-        layout.addWidget(CheckBox6)
-        layout.addWidget(CheckBox7)
+        counter = 0
+        self.CheckBox_seq = []
+        for seq in g_sequences:
+            self.CheckBox_seq.append(QCheckBox(seq))
+            layout.addWidget(self.CheckBox_seq[counter])
+            counter = counter + 1
+            
+        self.CheckBox_seq[0].setChecked(True)
         self.sequences.setLayout(layout) 
         
     def createChallengeList(self):
         self.challenges = QGroupBox("Challenges")
         
-        CheckBox1 = QCheckBox("Camera Motion")
-        CheckBox2 = QCheckBox("Illumination Changes")
-        CheckBox3 = QCheckBox("Motion Changes")
-        CheckBox4 = QCheckBox("Occlusion")
-        CheckBox5 = QCheckBox("Size change")
-
+        self.CheckBox_chall = []
         layout = QVBoxLayout()
-        layout.addWidget(CheckBox1)
-        layout.addWidget(CheckBox2)
-        layout.addWidget(CheckBox3)
-        layout.addWidget(CheckBox4)
-        layout.addWidget(CheckBox5)
+        counter = 0
+        for ch in chall_available:
+            self.CheckBox_chall.append(QCheckBox(ch))
+            layout.addWidget(self.CheckBox_chall[counter])
+            counter = counter + 1
+
+        self.CheckBox_chall[0].setChecked(True)
+
         self.challenges.setLayout(layout) 
     
     def createMetricsList(self):
         self.metrics = QGroupBox("Metrics")
         
-        CheckBox1 = QCheckBox("Accuracy")
-        CheckBox2 = QCheckBox("Robustness")
-        CheckBox3 = QCheckBox("Precision(Center Location Error)")
-
+        self.CheckBox_metr = []
         layout = QVBoxLayout()
-        layout.addWidget(CheckBox1)
-        layout.addWidget(CheckBox2)
-        layout.addWidget(CheckBox3)
+        
+        counter = 0
+        for mtr in metrics_available:
+            self.CheckBox_metr.append(QCheckBox(mtr))
+            layout.addWidget(self.CheckBox_metr[counter])
+            counter = counter + 1
+
+
+        self.CheckBox_metr[0].setChecked(True)
         self.metrics.setLayout(layout) 
         
         
@@ -171,8 +186,73 @@ class trackerApp(QDialog):
         
     def passEvaluatorConfig(self):
         #call callback for the evaluator
+        self.update_global_current_state()
         print("Start Evaluation")
+        
+        global trackers_paths
+        global trackers_extra
+        global eval_type
+        global sequences_final
+        global challenges_final
+        global metrics
+        
+#        ******************** Insert Frances function here
+#        it should receive 6 parameters
+#        example:
+#        function(trackers_paths,trackers_extra,eval_type,sequences_final,challenges_final,metrics)
+    
+        
         return
+    
+    def update_global_current_state(self):
+        global trackers_paths
+        global trackers_extra
+        global eval_type
+        global sequences_final
+        global challenges_final
+        global metrics
+        
+#        trackers_paths done before
+        
+#        trackers_extra
+        trackers_extra.clear()
+        for tr in self.CheckBox_tr:
+            if tr.isChecked():
+                trackers_extra.append(tr.text())
+                
+#        eval_type 
+        eval_type.clear();
+        s = "sequence"
+        if self.radioButton2.isChecked():
+            s = "challenge"
+        eval_type.append(s)
+        
+#        sequences_final
+        sequences_final.clear()
+        for tr in self.CheckBox_seq:
+            if tr.isChecked():
+                sequences_final.append(tr.text())
+                
+#        challenges_final
+        challenges_final.clear()
+        for ch in self.CheckBox_chall:
+            if ch.isChecked():
+                challenges_final.append(ch.text())
+                
+#        challenges_final
+        metrics.clear()
+        for mtr in self.CheckBox_metr:
+            if mtr.isChecked():
+                metrics.append(mtr.text())
+        
+#        print('*****************')
+#        print(trackers_paths)
+#        print(trackers_extra)
+#        print(eval_type)
+#        print(sequences_final)
+#        print(challenges_final)
+#        print(metrics)
+#        print('*****************')
         
         
 
