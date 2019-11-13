@@ -50,6 +50,9 @@ class trackerApp(QDialog):
         run_eval = QPushButton("Run")
         run_eval.clicked.connect(self.passEvaluatorConfig)
         
+        
+        
+        
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.loadFiles,1,0)
         mainLayout.addWidget(self.trackerList, 2, 0 )
@@ -71,12 +74,16 @@ class trackerApp(QDialog):
         self.listwidget = QListWidget()
         self.listwidget.setUpdatesEnabled(True)
         
-        btn1 = QPushButton("QFileDialog object")
+        btn1 = QPushButton("Load Trackers")
         btn1.clicked.connect(self.getfiles)
+        
+        clear_data = QPushButton("Clear")
+        clear_data.clicked.connect(self.clearTrackers)
         
         layout = QVBoxLayout()
         layout.addWidget(self.listwidget)
         layout.addWidget(btn1)
+        layout.addWidget(clear_data)
         self.loadFiles.setLayout(layout)  
         
     def getfiles(self):
@@ -89,7 +96,7 @@ class trackerApp(QDialog):
        self.trackers_res.append(fi.baseName())
        # update List Options
        self.listwidget.insertItem(len(self.trackers_res),"%s" % fi.baseName())
-       print(self.trackers_res)
+#       print(self.trackers_res)
        self.listwidget.repaint()
        self.update()
     
@@ -105,7 +112,8 @@ class trackerApp(QDialog):
             layout.addWidget(self.CheckBox_tr[counter])
             counter = counter+1;
     
-        self.CheckBox_tr[0].setChecked(True)
+        if len(self.CheckBox_tr) > 0:
+            self.CheckBox_tr[0].setChecked(True)
 
         layout.addStretch(1)
         self.trackerList.setLayout(layout) 
@@ -135,7 +143,8 @@ class trackerApp(QDialog):
             layout.addWidget(self.CheckBox_seq[counter])
             counter = counter + 1
             
-        self.CheckBox_seq[0].setChecked(True)
+        if len(self.CheckBox_seq) > 0:
+            self.CheckBox_seq[0].setChecked(True)
         self.sequences.setLayout(layout) 
         
     def createChallengeList(self):
@@ -180,6 +189,14 @@ class trackerApp(QDialog):
              self.challenges.setEnabled(False)
         else:
             self.challenges.setEnabled(True)
+        self.listwidget.repaint()
+        self.update()
+        
+    def clearTrackers(self):
+        global trackers_paths
+        self.listwidget.clear()
+        self.trackers_res.clear()
+        trackers_paths.clear()
         self.listwidget.repaint()
         self.update()
         
