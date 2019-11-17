@@ -50,8 +50,10 @@ class trackerApp(QDialog):
         run_eval = QPushButton("Run")
         run_eval.clicked.connect(self.passEvaluatorConfig)
         
-        
-        
+        scroll = QScrollArea()
+        scroll.setWidget(self.sequences)
+        scroll.setWidgetResizable(True)
+        scroll.setFixedHeight(300)
         
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.loadFiles,1,0)
@@ -61,7 +63,7 @@ class trackerApp(QDialog):
         self.check_eval_type()
         
         mainLayout.addWidget(self.evalType, 0, 1,1,2 )
-        mainLayout.addWidget(self.sequences, 1,1 )
+        mainLayout.addWidget(scroll, 1,1 )
         mainLayout.addWidget(self.challenges, 1,2 )
         mainLayout.addWidget(self.metrics, 2,1 )
         mainLayout.addWidget(run_eval,2,2)
