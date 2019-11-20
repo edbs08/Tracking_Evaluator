@@ -1,3 +1,6 @@
 Shapely:
 conda config --add channels conda-forge
 conda install shapely
+PyLaTeX:
+conda install -c auto pylatex
+

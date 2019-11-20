@@ -8,6 +8,7 @@ Created on Wed Oct 23 18:17:02 2019
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QFileInfo
+from evaluation.visualization import *
 
 g_sequences = []
 g_trackers = []
@@ -219,7 +220,11 @@ class trackerApp(QDialog):
 #        it should receive 6 parameters
 #        example:
 #        function(trackers_paths,trackers_extra,eval_type,sequences_final,challenges_final,metrics)
-    
+#       Note: I have manually included input to data path, this may not be a necessary input if we just make directory a requirement
+#       But didn't want to copy all sequences into this directory.
+#       Also still need to add eval_type functionality for by sequence so left that out for now.
+        
+        perform_analysis('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset', trackers_extra, sequences_final, challenges_final, metrics)
         
         return
     
