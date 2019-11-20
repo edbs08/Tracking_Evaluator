@@ -8,17 +8,21 @@ Created on Wed Oct 23 18:17:02 2019
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QFileInfo
+from PyQt5.QtGui import QPixmap
 from evaluation.visualization import *
 
 g_sequences = []
 g_trackers = []
 
+eval_options = ["Display Error Frames","Export to LaTex"]
 chall_available = ["Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
 metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
 
 #final global outputs of interface
-trackers_paths = []
-trackers_extra = []
+trackers_paths = [] #Not used anymore. here for reference
+
+trackers_results = []
+eval_extras = []
 eval_type = []
 sequences_final = []
 challenges_final = []
@@ -40,9 +44,13 @@ class trackerApp(QDialog):
         super(trackerApp, self).__init__(parent)
         self.trackers_res=[]
         self.originalPalette = QApplication.palette()
+        logo = QPixmap('./IPCV_logo.PNG')
+        logo = logo.scaledToWidth(200)
+        label_logo = QLabel()
+        label_logo.setPixmap(logo)
         
-        self.createLoadFiles()
         self.createSelectTrackers()
+        self.createEvalOptions()
         self.createEvalType()
         self.createSequenceList()
         self.createChallengeList()
@@ -56,9 +64,16 @@ class trackerApp(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setFixedHeight(300)
         
+        scroll2 = QScrollArea()
+        scroll2.setWidget(self.trackerList)
+        scroll2.setWidgetResizable(True)
+        scroll2.setFixedHeight(300)
+        scroll2.setFixedWidth(200)
+        
         mainLayout = QGridLayout()
-        mainLayout.addWidget(self.loadFiles,1,0)
-        mainLayout.addWidget(self.trackerList, 2, 0 )
+        mainLayout.addWidget(label_logo,0,0)
+        mainLayout.addWidget(scroll2,1,0)
+        mainLayout.addWidget(self.evalOptions, 2, 0 )
         
         
         self.check_eval_type()
@@ -70,7 +85,7 @@ class trackerApp(QDialog):
         mainLayout.addWidget(run_eval,2,2)
         self.setLayout(mainLayout)
         
-        
+    # Function to load results files. Not used in newest version but remained for reference
     def createLoadFiles(self):
         self.loadFiles = QGroupBox("Load tracker Results")
         
@@ -119,7 +134,21 @@ class trackerApp(QDialog):
             self.CheckBox_tr[0].setChecked(True)
 
         layout.addStretch(1)
-        self.trackerList.setLayout(layout) 
+        self.trackerList.setLayout(layout)
+        
+    def createEvalOptions(self):
+        self.evalOptions = QGroupBox("Select Evaluation Extras")
+        
+        self.CheckBox_eval_op = []
+        layout = QVBoxLayout()
+        counter = 0
+        for ch in eval_options:
+            self.CheckBox_eval_op.append(QCheckBox(ch))
+            layout.addWidget(self.CheckBox_eval_op[counter])
+            counter = counter + 1
+
+        self.evalOptions.setLayout(layout) 
+        
         
     def createEvalType(self):
         self.evalType = QGroupBox("Define type of evaluation")
@@ -192,7 +221,7 @@ class trackerApp(QDialog):
              self.challenges.setEnabled(False)
         else:
             self.challenges.setEnabled(True)
-        self.listwidget.repaint()
+        
         self.update()
         
     def clearTrackers(self):
@@ -209,8 +238,8 @@ class trackerApp(QDialog):
         self.update_global_current_state()
         print("Start Evaluation")
         
-        global trackers_paths
-        global trackers_extra
+        global trackers_results
+        global eval_extras
         global eval_type
         global sequences_final
         global challenges_final
@@ -219,30 +248,35 @@ class trackerApp(QDialog):
 #        ******************** Insert Frances function here
 #        it should receive 6 parameters
 #        example:
-#        function(trackers_paths,trackers_extra,eval_type,sequences_final,challenges_final,metrics)
+#        perform_analysis(trackers_results,eval_extras,eval_type,sequences_final,challenges_final,metrics)
 #       Note: I have manually included input to data path, this may not be a necessary input if we just make directory a requirement
 #       But didn't want to copy all sequences into this directory.
 #       Also still need to add eval_type functionality for by sequence so left that out for now.
         
-        perform_analysis('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset', trackers_extra, sequences_final, challenges_final, metrics)
-        
+        #perform_analysis('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset', trackers_results,eval_type, sequences_final, challenges_final, metrics)
+        perform_analysis(trackers_results,eval_extras,eval_type,sequences_final,challenges_final,metrics)
         return
     
     def update_global_current_state(self):
-        global trackers_paths
-        global trackers_extra
+        global trackers_results
+        global eval_extras
         global eval_type
         global sequences_final
         global challenges_final
         global metrics
         
-#        trackers_paths done before
         
-#        trackers_extra
-        trackers_extra.clear()
+#        trackers_results
+        trackers_results.clear()
         for tr in self.CheckBox_tr:
             if tr.isChecked():
-                trackers_extra.append(tr.text())
+                trackers_results.append(tr.text())
+
+#       eval_extras
+        eval_extras.clear()
+        for ev_ext in self.CheckBox_eval_op:
+            if ev_ext.isChecked():
+                eval_extras.append(ev_ext.text())
                 
 #        eval_type 
         eval_type.clear();
@@ -270,8 +304,8 @@ class trackerApp(QDialog):
                 metrics.append(mtr.text())
         
 #        print('*****************')
-#        print(trackers_paths)
-#        print(trackers_extra)
+#        print(trackers_results)
+#        print(eval_extras)
 #        print(eval_type)
 #        print(sequences_final)
 #        print(challenges_final)

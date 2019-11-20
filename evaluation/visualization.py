@@ -12,7 +12,7 @@ from evaluation.data import *
 from evaluation.metrics import *
 from evaluation.report import *
 
-def perform_analysis(data_path, trackers, sequences,challenges, metrics):
+def perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics):
     """Calls all analysis functions allows running of analysis from interface
     
     Args:
@@ -21,6 +21,7 @@ def perform_analysis(data_path, trackers, sequences,challenges, metrics):
         trackers(list): list of strings, trackers to be compared
         sequences(list): list of strings, sequences to include
     """
+    data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset'
     experiment = 'baseline'
     sample_num = '1'
     

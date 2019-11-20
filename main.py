@@ -11,7 +11,7 @@ import os.path
 #def main():
 #    print("Hello World!")
 
-def read_workspace(data_path):
+def read_workspace(data_path=os.getcwd()):
     #This function is to take the data from the dataset that the user provides
     #so once we read in file we check what trackers and sequences are available to compare/use
 
@@ -34,6 +34,7 @@ def read_workspace(data_path):
 
 if __name__ == "__main__":
     # manually input directory because I didn't want to copy all sequences to new directory. 
-    trackers, sequences = read_workspace('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset')
+    #trackers, sequences = read_workspace('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset')
+    trackers, sequences = read_workspace()
     #trackers, sequences = read_workspace(os.getcwd())
     interface_main(sequences,trackers)
