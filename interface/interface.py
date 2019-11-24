@@ -16,7 +16,7 @@ g_trackers = []
 
 eval_options = ["Display Error Frames","Export to LaTex"]
 chall_available = ["Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
-metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
+metrics_available = ["Overall","Accuracy","Robustness","Precision(Center Location Error)"]
 
 #final global outputs of interface
 trackers_paths = [] #Not used anymore. here for reference
@@ -76,7 +76,7 @@ class trackerApp(QDialog):
         mainLayout.addWidget(self.evalOptions, 2, 0 )
         
         
-        self.check_eval_type()
+#        self.check_eval_type()
         
         mainLayout.addWidget(self.evalType, 0, 1,1,2 )
         mainLayout.addWidget(scroll, 1,1 )
@@ -151,7 +151,7 @@ class trackerApp(QDialog):
         
         
     def createEvalType(self):
-        self.evalType = QGroupBox("Define type of evaluation")
+        self.evalType = QGroupBox("Define type of Results")
         
         self.radioButton1 = QRadioButton("Per sequence")
         self.radioButton1.setChecked(True)
@@ -170,14 +170,28 @@ class trackerApp(QDialog):
         layout = QVBoxLayout()
         counter = 0
         self.CheckBox_seq = []
+        self.CheckBox_seq.append(QCheckBox("- Select/Remove all -"))
         for seq in g_sequences:
             self.CheckBox_seq.append(QCheckBox(seq))
             layout.addWidget(self.CheckBox_seq[counter])
             counter = counter + 1
             
-        if len(self.CheckBox_seq) > 0:
-            self.CheckBox_seq[0].setChecked(True)
+        if len(self.CheckBox_seq) > 2:
+            self.CheckBox_seq[1].setChecked(True)
+            
+            
+        self.CheckBox_seq[0].toggled.connect(self.selectAllSeq)
+        
         self.sequences.setLayout(layout) 
+    
+    def selectAllSeq(self):
+        flag = False
+        if self.CheckBox_seq[0].isChecked():
+            flag = True
+        
+        for i in self.CheckBox_seq:
+            i.setChecked(flag)
+            
         
     def createChallengeList(self):
         self.challenges = QGroupBox("Challenges")
@@ -212,17 +226,18 @@ class trackerApp(QDialog):
         
         
     def check_eval_type(self):
-        if (self.radioButton2.isChecked()):
-             self.sequences.setEnabled(False)
-        else:
-            self.sequences.setEnabled(True)
-            
-        if (self.radioButton1.isChecked()):
-             self.challenges.setEnabled(False)
-        else:
-            self.challenges.setEnabled(True)
-        
-        self.update()
+#        if (self.radioButton2.isChecked()):
+#             self.sequences.setEnabled(False)
+#        else:
+#            self.sequences.setEnabled(True)
+#            
+#        if (self.radioButton1.isChecked()):
+#             self.challenges.setEnabled(False)
+#        else:
+#            self.challenges.setEnabled(True)
+#        
+#        self.update()
+        return
         
     def clearTrackers(self):
         global trackers_paths
