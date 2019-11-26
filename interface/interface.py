@@ -15,7 +15,7 @@ g_sequences = []
 g_trackers = []
 
 eval_options = ["Display Error Frames","Export to LaTex"]
-chall_available = ["Overall","Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
+chall_available = ["Overall","Camera Motion","Illumination Changes","Motion Change","Occlusion","Size change"]
 metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
 
 #final global outputs of interface

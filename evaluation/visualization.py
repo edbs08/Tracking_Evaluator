@@ -16,9 +16,16 @@ import dominate
 from dominate import tags
 from dominate.tags import *
 
+markers = ['o', '+', 'x', '^', '.', ',', 'v',  '<', '>', 's', 'd']
+colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
 plot_list = []
+trackers = []
+sequences = []
+challenges = []
+metrics = []
+eval_type = []
 
-def perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics):
+def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
     """Calls all analysis functions allows running of analysis from interface
     
     Args:
@@ -27,23 +34,44 @@ def perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics
         trackers(list): list of strings, trackers to be compared
         sequences(list): list of strings, sequences to include
     """
-    data_path =  os.getcwd()
-    #data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
+    global trackers
+    global sequences
+    global challenges
+    global metrics
+    global eval_type
+    data_path = os.getcwd()
+    data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
     experiment = 'baseline'
     sample_num = '1'
+
+    trackers = tracks
+    sequences = seqs
+    challenges = challs
+    metrics = mets
+    eval_type = eval_method
+    
+    if eval_type == ['sequence'] and len(sequences) > 10:
+        sequenceMessage()
+        return
     
     data = load_data(data_path, sequences, trackers, experiment, sample_num)
     
+    if data == None:
+        dataMessage()
+        return
+    
     AR_data = compute_ar_and_precision(data, challenges, metrics)
     
-    if 'Accuracy' and 'Robustness' in metrics:
-        basic_ar_plots(AR_data, challenges, trackers)
+    if 'Accuracy' in metrics and 'Robustness' in metrics:
+        basic_ar_plots(AR_data)
     else:
         print('Accuracy/Robustness plots not possible with selected metrics')
+    if 'Accuracy' in metrics:
+        accuracy_plots(AR_data)
     if 'Robustness' in metrics:
-        robustness_plots(AR_data, challenges, trackers, sequences)
+        robustness_plots(AR_data)
     if 'Precision(Center Location Error)' in metrics:
-        cle_plots(AR_data, challenges, trackers, sequences)
+        cle_plots(AR_data)
         
     create_report('Analysis Report', AR_data, metrics)
     visualization_html('Analysis Report', AR_data, metrics)
@@ -52,7 +80,7 @@ def perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics
     
     return AR_data
     
-def basic_ar_plots(data, challenges, trackers):
+def basic_ar_plots(data):
     """ Creates accuracy robustness plots
     
     Args:
@@ -60,7 +88,6 @@ def basic_ar_plots(data, challenges, trackers):
         challenges(list): list of strings, challenges to include
         trackers(list): list of strings, trackers to be compared
     """
-    markers = ['o', '+', 'x', '^', '.', ',', 'v',  '<', '>', 's', 'd']
     for c in challenges:
         i = 0
         for t in trackers:
@@ -85,7 +112,7 @@ def basic_ar_plots(data, challenges, trackers):
     
     return
 
-def robustness_plots(data, challenges, trackers, sequences):
+def robustness_plots(data):
     """ Draws plots of total fail count for each challenge
     
     Args:
@@ -95,8 +122,6 @@ def robustness_plots(data, challenges, trackers, sequences):
         sequences(list): list of strings, sequences to include
     
     """
-    markers = ['o', '+', 'x', '^', '.', ',', 'v',  '<', '>', 's', 'd']
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     i = 0
     for t in trackers:
         challenges = data.keys()
@@ -117,7 +142,37 @@ def robustness_plots(data, challenges, trackers, sequences):
     fig.savefig(filename)
     plt.close()
     
-def cle_plots(data, challenges, trackers, sequences):
+def accuracy_plots(data):
+
+    i = 0
+    for t in trackers:
+        j = 0
+        if eval_type == ['sequence']:
+            for c in challenges:
+                accuracy = []
+                sequences_inc = []    
+                for s in sequences:
+                    if s in data[c][t].keys():
+                        accuracy.append(data[c][t][s]['sequence_acc'])
+                        sequences_inc.append(s)
+                plt.scatter(sequences_inc, accuracy, marker = markers[j], color = colors[i], s = 100, label = t + ":" + c)
+                j += 1
+        elif eval_type == ['challenge']:
+            accuracy = []
+            for c in challenges:
+                accuracy.append(data[c][t]['tracker_acc'])
+            plt.scatter(challenges, accuracy, marker = markers[i], s = 100, label = t )
+        i += 1
+    plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.xlabel(eval_type[0])
+    plt.ylabel('Accuracy')
+    fig = plt.gcf()
+    fig.set_size_inches(22.5, 10.5)
+    filename = "Accuracy.png"
+    fig.savefig(filename)
+    plt.close()
+    
+def cle_plots(data):
     """Draws plots of center location error
     
     Args:
@@ -202,6 +257,53 @@ def visualization_html(header, data, metrics):
     f.write(doc1.render())
     f.close()
     print(doc1.render())
+    
+class sequenceMessage(QWidget):
+    """Class created to allow message to user if too many sequences selected.
+    """
+    def __init__(self):
+        super().__init__()
+        self.title = 'PyQT5 Message Box'
+        self.left = 300
+        self.top = 300
+        self.width = 320
+        self.height = 200
+        self.sequence_limit()
+        
+        
+    def sequence_limit(self):
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.setWindowTitle(self.title)
+        choice = QMessageBox.question(self, 'Message:',  "Please select up to 8 sequences for by sequence report.", QMessageBox.Ok)
+        if choice == QMessageBox.Ok:
+            return
+        else:
+            sys.exit()
+        self.exec()
+
+class dataMessage(QWidget):
+    """Class created to allow message to user if too many sequences selected.
+    """
+    def __init__(self):
+        super().__init__()
+        self.title = 'PyQT5 Message Box'
+        self.left = 300
+        self.top = 300
+        self.width = 320
+        self.height = 200
+        self.data_empty()
+        
+        
+    def data_empty(self):
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.setWindowTitle(self.title)
+        choice = QMessageBox.question(self, 'Message:',  "No data for selected tracker-sequence combination, please make another selection", QMessageBox.Ok)
+        if choice == QMessageBox.Ok:
+            return
+        else:
+            sys.exit()
+        self.exec()
+
     
     
 

@@ -39,6 +39,7 @@ def load_data(data_path, sequences, trackers, experiment_name, sample_number):
     
 
     data = {}
+    valid = False
 
     for t in trackers:
         data[t] = {}
@@ -46,44 +47,56 @@ def load_data(data_path, sequences, trackers, experiment_name, sample_number):
             filename = s + '_00' + str(sample_number) + '.txt'
             gt_name = '\groundtruth.txt'
             output_path = os.path.join(data_path, 'trackers', t, experiment_name, s, filename)
-            gt_path = os.path.join(data_path, 'sequences', s)
-             
-            output = []
-            with open(output_path, "r") as filestream:
-                for line in filestream:
-                    currentline = line.split(",")
-                    currentline = [float(i) for i in currentline]
-                    output.append(currentline)        
-            output = np.array(output)
             
-            groundtruth = []
-            with open(gt_path + gt_name, "r") as filestream: 
-                for line in filestream:
-                    currentline = line.split(",")
-                    currentline = [float(i) for i in currentline]
-                    groundtruth.append(currentline)
-            groundtruth = np.array(groundtruth)
+            if os.path.isfile(output_path):
+                gt_path = os.path.join(data_path, 'sequences', s)
+                output = []
+                with open(output_path, "r") as filestream:
+                    for line in filestream:
+                        currentline = line.split(",")
+#                        currentline = line.split("\t")
+                        currentline = [float(i) for i in currentline]
+                        output.append(currentline)        
+                output = np.array(output)
+                
+                groundtruth = []
+                with open(gt_path + gt_name, "r") as filestream: 
+                    for line in filestream:
+                        currentline = line.split(",")
+#                        currentline = line.split("\t")
+                        currentline = [float(i) for i in currentline]
+                        groundtruth.append(currentline)
+                groundtruth = np.array(groundtruth)
+                
+                cm = np.zeros(len(groundtruth))
+                ic = np.zeros(len(groundtruth))
+                mc = np.zeros(len(groundtruth))
+                occ = np.zeros(len(groundtruth))
+                sc = np.zeros(len(groundtruth))
+                if os.path.isfile(gt_path + '\camera_motion.tag'):
+                    cm = np.loadtxt(gt_path + '\camera_motion.tag').astype(np.int)
+                if os.path.isfile(gt_path +'\illum_change.tag'):
+                    ic = np.loadtxt(gt_path + '\illum_change.tag').astype(np.int)
+                if os.path.isfile(gt_path +'\motion_change.tag'): 
+                    mc = np.loadtxt(gt_path + '\motion_change.tag').astype(np.int)
+                if os.path.isfile(gt_path +'\occlusion.tag'): 
+                    occ = np.loadtxt(gt_path + '\occlusion.tag').astype(np.int)
+                if os.path.isfile(gt_path +'\size_change.tag'): 
+                    sc = np.loadtxt(gt_path + '\size_change.tag').astype(np.int)
+                
             
-            cm = np.zeros(len(groundtruth))
-            ic = np.zeros(len(groundtruth))
-            mc = np.zeros(len(groundtruth))
-            occ = np.zeros(len(groundtruth))
-            sc = np.zeros(len(groundtruth))
-            if os.path.isfile(gt_path + '\camera_motion.tag'):
-                cm = np.loadtxt(gt_path + '\camera_motion.tag').astype(np.int)
-            if os.path.isfile(gt_path +'\illum_change.tag'):
-                ic = np.loadtxt(gt_path + '\illum_change.tag').astype(np.int)
-            if os.path.isfile(gt_path +'\motion_change.tag'): 
-                mc = np.loadtxt(gt_path + '\motion_change.tag').astype(np.int)
-            if os.path.isfile(gt_path +'\occlusion.tag'): 
-                occ = np.loadtxt(gt_path + '\occlusion.tag').astype(np.int)
-            if os.path.isfile(gt_path +'\size_change.tag'): 
-                sc = np.loadtxt(gt_path + '\size_change.tag').astype(np.int)  
 
-            data[t][s] = { 'output': output, 'groundtruth': groundtruth,  'Camera Motion': cm, 
-                        'Illumination Changes' : ic, 'Motion Change': mc, 'Occlusion' : occ, 'Size change' : sc}
-    
-    return data
+                data[t][s] = { 'output': output, 'groundtruth': groundtruth,  'Camera Motion': cm, 
+                            'Illumination Changes' : ic, 'Motion Change': mc, 'Occlusion' : occ, 'Size change' : sc}
+            else:
+                print('No output data for tracker:', t, 'sequence: ', s)
+                
+        if data[t]:
+            valid = True
+    if valid == True:
+        return data
+    else:
+        return None
 
 
 def download_VOT(data_path, version):
