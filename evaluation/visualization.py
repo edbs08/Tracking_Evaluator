@@ -8,6 +8,7 @@ Created on Tue Nov 12 11:52:26 2019
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from evaluation.data import *
 from evaluation.metrics import *
 from evaluation.report import *
@@ -27,7 +28,7 @@ def perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics
         sequences(list): list of strings, sequences to include
     """
     data_path =  os.getcwd()
-    #'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset'
+    #data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
     experiment = 'baseline'
     sample_num = '1'
     
