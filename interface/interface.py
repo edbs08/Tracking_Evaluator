@@ -15,8 +15,8 @@ g_sequences = []
 g_trackers = []
 
 eval_options = ["Display Error Frames","Export to LaTex"]
-chall_available = ["Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
-metrics_available = ["Overall","Accuracy","Robustness","Precision(Center Location Error)"]
+chall_available = ["Overall","Camera Motion","Illumination Changes","Motion Changes","Occlusion","Size change"]
+metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
 
 #final global outputs of interface
 trackers_paths = [] #Not used anymore. here for reference
@@ -302,6 +302,7 @@ class trackerApp(QDialog):
         
 #        sequences_final
         sequences_final.clear()
+        self.CheckBox_seq.pop(0) #Remove the "select all" item
         for tr in self.CheckBox_seq:
             if tr.isChecked():
                 sequences_final.append(tr.text())

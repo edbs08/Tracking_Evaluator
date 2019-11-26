@@ -43,7 +43,7 @@ def create_report(header, data, metrics):
                             row.append(data[c][t]['tracker_acc'])
                         if 'Robustness' in metrics:
                             row.append(data[c][t]['tracker_robust'])
-                        if 'Precision' in metrics:
+                        if 'Precision(Center Location Error)' in metrics:
                             row.append(data[c][t]['tracker_precision'])
                         data_table.add_row(row)
     
@@ -64,3 +64,4 @@ def create_report(header, data, metrics):
         
             
     doc.generate_tex()
+
