@@ -8,11 +8,13 @@ Created on Tue Nov 12 10:28:02 2019
 import numpy as np
 import warnings
 import sys
+import copy
 from shapely.geometry import Polygon, box
 from math import exp, sqrt, log
 
+lowest_seqs = {}
 
-def compute_ar_and_precision(data, challenge, metrics):
+def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
     """Calculates and collects accuracy, robustness and precision as selected
     
     Args: 
@@ -28,7 +30,7 @@ def compute_ar_and_precision(data, challenge, metrics):
     for c in challenge:
         print('Processing challenge: ', c)
         AR_data[c] = {}
-        for t in data:
+        for t in trackers:
             print('Tracker:', t)
             seq_acc_sum = 0
             AR_data[c][t] = {}
@@ -37,6 +39,7 @@ def compute_ar_and_precision(data, challenge, metrics):
             valid_seq = 0
             accuracy_list = []
             cle_list = []
+            min_acc_frames = []
             for s in data[t]:
                 # retrieve mask to apply when calculating challenge metrics
                 challenge_mask, frame_idx = extract_challenge_mask(data, c, t, s)
@@ -53,13 +56,14 @@ def compute_ar_and_precision(data, challenge, metrics):
                     gt_bboxes = np.array(data[t][s]['groundtruth'][:][:])                    
                     result_bboxes = np.array(data[t][s]['output'][:][:])
                     
-                    accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, challenge_mask)
+                    accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx)
                     if 'Accuracy' in metrics or 'Robustness' in metrics:
                         seq_acc_sum = seq_acc_sum + mean_seq_acc
                         AR_data[c][t][s]['acc_per_frame'] = accuracy
                         AR_data[c][t][s]['sequence_acc'] = mean_seq_acc
                         accuracy_list = np.append(accuracy_list, accuracy[~np.isnan(accuracy)])
-#                        accuracy_list.append(accuracy)
+                        if "Display Error Frames" in eval_extras:
+                            min_acc_frames.extend(extract_min_frames(accuracy, frame_idx, s))
                     if 'Robustness' in metrics:
                         failures, f_i = count_failures(accuracy, result_bboxes, challenge_mask, s)
                         AR_data[c][t][s]['failures_per_sequence'] = failures
@@ -77,15 +81,17 @@ def compute_ar_and_precision(data, challenge, metrics):
             if valid_seq != 0:
                 if 'Accuracy' in metrics:
                     AR_data[c][t]['tracker_acc'] = round(np.mean(np.array(accuracy_list)),4)
+                    if "Display Error Frames" in eval_extras: 
+                        AR_data[c][t]['min_acc_frames'] =  collect_low_frames(min_acc_frames)
                 if 'Robustness' in metrics:
                     AR_data[c][t]['tracker_failcount'] = fail_count
                     AR_data[c][t]['tracker_failrate'] = round(fail_count/length,4)
                     AR_data[c][t]['tracker_robust'] = round(exp(-(30*fail_count/length)), 4)
                 if 'Precision(Center Location Error)' in metrics:
-                    AR_data[c][t]['tracker_precision'] = round(np.mean(np.array(cle_list)),4)                
+                    AR_data[c][t]['tracker_precision'] = round(np.mean(np.array(cle_list)),4)
+
             else:
-                print("The chosen sequences do not contain examples of the requested challenge")
-                             
+                print("The chosen sequences do not contain examples of the requested challenge")         
     return AR_data
     
 
@@ -128,7 +134,7 @@ def extract_challenge_mask(data, challenge, tracker, sequence):
             return None
     
 
-def compute_iou_and_cle(gt_bboxes, result_bboxes, challenge_mask):
+def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx):
     """ Calculate region overlap and center location error
     
     Args:
@@ -149,8 +155,8 @@ def compute_iou_and_cle(gt_bboxes, result_bboxes, challenge_mask):
         gt_bboxes = gt_bboxes[:length, :]
         result_bboxes = result_bboxes[:length][:]
     
-    groundtruth = gt_bboxes[challenge_mask == 1]
-    result = result_bboxes[challenge_mask == 1]
+    groundtruth = gt_bboxes[frame_idx]
+    result = result_bboxes[frame_idx]
 
     iou = np.zeros((groundtruth.shape[0], 1))
     cle = np.zeros((groundtruth.shape[0],1))
@@ -259,4 +265,32 @@ def define_polygon(x):
     else:
         print('Groundtruth or output result incorrect shape')
         return None
+    
+def extract_min_frames(val_list, idx_list,s):
+    
+    values = copy.deepcopy(val_list)
+    values = values.tolist()
+    indices = copy.deepcopy(idx_list)
+    indices = indices.tolist()
+    min_vals = []
+    for i in range(5):
+        min_loc = np.nanargmin(values)
+        min_vals.append(tuple((values[min_loc][0], indices[min_loc], s)))
+        del values[min_loc]
+        del indices[min_loc]
+    
+    return min_vals
+    
+    
         
+def collect_low_frames(min_list):
+    
+    min_frames = copy.deepcopy(min_list)
+    final_mins = []
+    for i in range(5):
+        min_loc = np.argmin([i[0] for i in min_frames])
+        final_mins.append(tuple(min_frames[min_loc]))
+        del min_frames[min_loc]
+    
+    return final_mins
+#        

@@ -9,10 +9,10 @@ from evaluation.data import *
 from evaluation.metrics import *
 from evaluation.visualization import *
 from evaluation.report import *
-from evaluation.verification import *
+
 import time
 import numpy as np
-#data_path = 'C:\Users\Frances\Documents\UBr\TRDP\\ExampleDatasetandSequences'
+#data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder'
 ##Save dataset to be used in directory of scripts labelled Dataset
 data_path = os.getcwd()
 
@@ -30,11 +30,11 @@ sample_num = '1'
 trackers, sequences = initialize_workspace(data_path)
 
 #sequences = ['carDark', 'car4', 'david', 'david2', 'sylvester']
-sequences = ['ants1', 'ball1', 'butterfly', 'tiger', 'fernando']
+#sequences = ['ants1', 'ball1', 'butterfly', 'tiger', 'fernando']
 #sequences = ['bag', 'fish1', 'graduate', 'matrix', 'singer2']
 #sequences = ['zebrafish1']
 ##some of these trackers also output polygons - ECO, UPDT
-trackers = ['ECO', 'UPDT', 'srdcf_deep']
+trackers = ['ECO', 'DSiam', 'srdcf_deep']
 ## trackers outputting rectangles
 #trackers = ['ECO', 'UPDT', 'DSiam', 'DLSTpp','SiamVGG']
 #trackers = ['DLSTpp', 'DSiam', 'SiamFC', 'SiamVGG']
@@ -42,16 +42,17 @@ trackers = ['ECO', 'UPDT', 'srdcf_deep']
 #trackers = ['Accuracy_tester']
 #data = load_data(data_path, sequences, trackers, experiment, sample_num)
 #challenges = ["Camera Motion","Illumination Changes","Motion Change","Occlusion","Size change"]
-challenges = ["Overall", "Camera Motion"]
+challenges = ["Camera Motion"]
 metrics = ["Accuracy","Robustness","Precision(Center Location Error)"]
 
 start = time.time()
 
-eval_extras = []
+eval_extras = "Display Error Frames"
 eval_type = ['challenge']
 #download_VOT(data_path, '2015')
-#perform_Analysis(data_path, sequences, trackers, challenges)
+
 AR_data =perform_analysis(trackers,eval_extras,eval_type,sequences,challenges,metrics)
+#display_low_frames(AR_data)
 #AR_data = compute_ar_and_precision(data, challenges, metrics)
 #
 #if 'Accuracy' and 'Robustness' in metrics:
@@ -75,11 +76,11 @@ end = time.time()
 elapsed_time = end-start
 print('Time taken for evaluation: ', elapsed_time)
 
-#for c in challenges:
-#    for t in trackers:
-#        print(t, c, 'Accuracy: ',  AR_data[c][t]['tracker_acc'])
-#        print(t, c, 'Robustness: ', AR_data[c][t]['tracker_robust'])
-#        print(t, c, 'Failure Count: ', AR_data[c][t]['tracker_failcount'])
+for c in challenges:
+    for t in trackers:
+        print(t, c, 'Accuracy: ',  AR_data[c][t]['tracker_acc'])
+        print(t, c, 'Robustness: ', AR_data[c][t]['tracker_robust'])
+        print(t, c, 'Failure Count: ', AR_data[c][t]['tracker_failcount'])
 
 #file2write=open("precision_VR.txt",'w')
 #for i in AR_data['Overall']['VR']['carDark']['precision_per_frame']:

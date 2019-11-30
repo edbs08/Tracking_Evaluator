@@ -9,6 +9,8 @@ Created on Tue Nov 12 11:52:26 2019
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import stat
+import cv2
 from evaluation.data import *
 from evaluation.metrics import *
 from evaluation.report import *
@@ -19,11 +21,13 @@ from dominate.tags import *
 markers = ['o', '+', 'x', '^', '.', ',', 'v',  '<', '>', 's', 'd']
 colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
 plot_list = []
+frame_list = {}
 trackers = []
 sequences = []
 challenges = []
 metrics = []
 eval_type = []
+data = {}
 
 def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
     """Calls all analysis functions allows running of analysis from interface
@@ -39,8 +43,9 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
     global challenges
     global metrics
     global eval_type
+    global data
     data_path = os.getcwd()
-    data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
+    #data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
     experiment = 'baseline'
     sample_num = '1'
 
@@ -60,7 +65,7 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
         dataMessage()
         return
     
-    AR_data = compute_ar_and_precision(data, challenges, metrics)
+    AR_data = compute_ar_and_precision(data, challenges, trackers, eval_extras, metrics)
     
     if 'Accuracy' in metrics and 'Robustness' in metrics:
         basic_ar_plots(AR_data)
@@ -72,10 +77,17 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
         robustness_plots(AR_data)
     if 'Precision(Center Location Error)' in metrics:
         cle_plots(AR_data)
-        
-    create_report('Analysis Report', AR_data, metrics)
+    
+    if "Export to LaTex" in eval_extras:
+        create_report("Analysis Report", AR_data, metrics)
+    
+    if "Display Error Frames" in eval_extras:
+        display_low_frames(AR_data)
+    
     visualization_html('Analysis Report', AR_data, metrics)
     
+
+        
     print('Evaluation Complete!')   
     
     return AR_data
@@ -135,6 +147,7 @@ def robustness_plots(data):
     plt.legend()
     plt.xlabel('Challenge')
     plt.ylabel('Total failures')
+    plt.title('Fail Count')
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
     filename = "Failcount.png"
@@ -166,9 +179,11 @@ def accuracy_plots(data):
     plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.xlabel(eval_type[0])
     plt.ylabel('Accuracy')
+    plt.title('Average Overlap')
     fig = plt.gcf()
     fig.set_size_inches(22.5, 10.5)
     filename = "Accuracy.png"
+    plot_list.append(filename)
     fig.savefig(filename)
     plt.close()
     
@@ -181,7 +196,7 @@ def cle_plots(data):
         trackers(list): list of strings, trackers to be compared
         sequences(list): list of strings, sequences to include
     """
-    width = 1/(len(trackers)+1)
+    width = min(0.1, 1/(len(trackers)+1))
     pos = np.arange(len(challenges))
     for t in trackers:
         cle = []
@@ -226,6 +241,7 @@ def visualization_html(header, data, metrics):
             tags.style("table{border-collapse:collapse}")
             tags.style("th{font-size:small;border:1px solid gray;padding:4px;background-color:#DDD}")
             tags.style("td{font-size:small;text-align:center;border:1px solid gray;padding:4px}")
+ 
             with tags.table():
                 with tags.thead():
                     tags.th("Challenge", style = "color:#ffffff;background-color:#6A75F2")
@@ -252,11 +268,73 @@ def visualization_html(header, data, metrics):
             for graph in plot_list:
                 tags.img(src=graph,style='max-width:700px;margin-top: 50px;')
                 tags.br()
+                
+        if frame_list:
+                for c in challenges:
+                    for t in trackers:
+                        with figure():
+                            h3('Low Frames for tracker: %s'%t + ' challenge: %s'%c)
+                            for i in range(5):
+                                tags.img(src = frame_list[c][t][i][0], style="width:340px;margin-top: 50px")
+                                tags.i(frame_list[c][t][i][1])
+                                
+            
 
     f= open(os.getcwd()+'/evaluation_results'+'.html', 'w')
     f.write(doc1.render())
     f.close()
     print(doc1.render())
+    
+def display_low_frames(AR_data):
+    if not os.path.isdir('low frames'):
+        os.mkdir('low frames')
+    
+    for c in challenges:
+        frame_list[c] = {}
+        for t in trackers:
+            fig = []
+            for i in range(5):
+                fig_name = '00000000'
+                s = AR_data[c][t]['min_acc_frames'][i][2]
+                idx = AR_data[c][t]['min_acc_frames'][i][1]
+                fig_path = os.path.join('sequences',s,'color')
+                if os.path.isdir(fig_path):
+                    frame_num = str(AR_data[c][t]['min_acc_frames'][i][1] + 1)
+                    fig_length = len(frame_num)
+                    fig_name = fig_name[fig_length:] + frame_num + '.jpg'
+                    fig_path = os.path.join(fig_path, fig_name)
+                    
+                    gt = data[t][s]['groundtruth'][idx]
+                    result = data[t][s]['output'][idx]
+                    
+                    fig_name = '%s_'%c + '%s_'%t + '%s_'%s + '%s.jpg'%frame_num
+                    img = draw_bbox_fig(fig_name, fig_path, gt, result)
+                    cv2.imwrite(os.path.join('low frames',fig_name), img)
+                    
+                    fig.append(tuple((os.path.join('low frames',fig_name), '%s_'%s + '%s'%frame_num)))
+            frame_list[c][t] = fig
+            
+def draw_bbox_fig(fig_name,fig_path, gt, result):
+    img = cv2.imread(fig_path)
+    
+    if len(gt) > 4:
+        gt_pts = np.array([[gt[0], gt[1]], [gt[2], gt[3]],[gt[4], gt[5]],[gt[6], gt[7]]], np.int32)
+        cv2.polylines(img, [gt_pts],  True, (0,255,0), 2)
+    else: 
+        
+        cv2.rectangle(img, (int(gt[0]), int(gt[1])), (int(gt[0]) + int(gt[2]),
+                            int(gt[1])+int(gt[3])), (255,0,0), 2)
+    if len(result) > 4:
+        result_pts = np.array([[result[0], result[1]], [result[2], result[3]],[result[4], result[5]],
+                           [result[6], result[7]]], np.int32)
+        cv2.polylines(img, [result_pts],  True, (255,0,0), 2)
+    else:
+        cv2.rectangle(img, (int(result[0]), int(result[1])), (int(result[0]) + int(result[2]),
+                            int(result[1])+int(result[3])), (255,0,0), 2)
+        
+    return img
+    
+    
     
 class sequenceMessage(QWidget):
     """Class created to allow message to user if too many sequences selected.
@@ -282,7 +360,7 @@ class sequenceMessage(QWidget):
         self.exec()
 
 class dataMessage(QWidget):
-    """Class created to allow message to user if too many sequences selected.
+    """Class created to allow message to user if not enough data with selected options.
     """
     def __init__(self):
         super().__init__()

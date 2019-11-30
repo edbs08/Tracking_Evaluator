@@ -34,7 +34,7 @@ def read_workspace(data_path=os.getcwd()):
 
 if __name__ == "__main__":
     # manually input directory because I didn't want to copy all sequences to new directory. 
-    trackers, sequences = read_workspace('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/')
-    #trackers, sequences = read_workspace()
+    #trackers, sequences = read_workspace('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/')
+    trackers, sequences = read_workspace()
 #    trackers, sequences = read_workspace(os.getcwd())
     interface_main(sequences,trackers)
