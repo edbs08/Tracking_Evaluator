@@ -14,7 +14,7 @@ from math import exp, sqrt, log
 
 lowest_seqs = {}
 
-def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
+def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, metrics):
     """Calculates and collects accuracy, robustness and precision as selected
     
     Args: 
@@ -40,7 +40,7 @@ def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
             accuracy_list = []
             cle_list = []
             min_acc_frames = []
-            for s in data[t]:
+            for s in data[t].keys():
                 # retrieve mask to apply when calculating challenge metrics
                 challenge_mask, frame_idx = extract_challenge_mask(data, c, t, s)
                 
@@ -56,7 +56,8 @@ def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
                     gt_bboxes = np.array(data[t][s]['groundtruth'][:][:])                    
                     result_bboxes = np.array(data[t][s]['output'][:][:])
                     
-                    accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx)
+                    if 'Accuracy' in metrics or 'Precision(Center Location Error)' in metrics:
+                        accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics)
                     if 'Accuracy' in metrics or 'Robustness' in metrics:
                         seq_acc_sum = seq_acc_sum + mean_seq_acc
                         AR_data[c][t][s]['acc_per_frame'] = accuracy
@@ -77,6 +78,10 @@ def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
 #                        cle_list = np.append(cle_list, cle[cle!=0])
                         cle_list = np.append(cle_list, cle)
                         AR_data[c][t][s]['sequence_precision'] = mean_seq_cle
+                        
+                else:
+                    print("The chosen sequence:", s, "does not contain examples of challenge: ", c, 'for tracker: ', t)
+                    
                     
             if valid_seq != 0:
                 if 'Accuracy' in metrics:
@@ -89,9 +94,11 @@ def compute_ar_and_precision(data, challenge, trackers, eval_extras, metrics):
                     AR_data[c][t]['tracker_robust'] = round(exp(-(30*fail_count/length)), 4)
                 if 'Precision(Center Location Error)' in metrics:
                     AR_data[c][t]['tracker_precision'] = round(np.mean(np.array(cle_list)),4)
-
             else:
-                print("The chosen sequences do not contain examples of the requested challenge")         
+                print("No data available with these sequences for challenge: ", c)
+#                del AR_data[c][t]
+
+                    
     return AR_data
     
 
@@ -134,7 +141,7 @@ def extract_challenge_mask(data, challenge, tracker, sequence):
             return None
     
 
-def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx):
+def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics):
     """ Calculate region overlap and center location error
     
     Args:
@@ -172,17 +179,18 @@ def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx):
         result_poly = define_polygon(result[i][:])
         
         eps = np.finfo(float).eps
-        iou[i, :] = round(gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps),4)
-#        iou[i, :] = gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps)
-        iou = np.clip(iou, 0.0, 1.0)
+        if 'Accuracy' in metrics:
+            iou[i, :] = round(gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps),4)
+    #        iou[i, :] = gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps)
+            iou = np.clip(iou, 0.0, 1.0)
         
-        gt_center= gt_poly.centroid.coords
-        result_center = result_poly.centroid.coords
-        
-        cle[i,:] = sqrt((gt_center[0][0]-result_center[0][0])*(gt_center[0][0]-result_center[0][0])
-            + ((gt_center[0][1]-result_center[0][1])*(gt_center[0][1]-result_center[0][1])))
-        
-        
+        if 'Precision(Center Location Error)' in metrics:
+            gt_center= gt_poly.centroid.coords
+            result_center = result_poly.centroid.coords
+            
+            cle[i,:] = sqrt((gt_center[0][0]-result_center[0][0])*(gt_center[0][0]-result_center[0][0])
+                + ((gt_center[0][1]-result_center[0][1])*(gt_center[0][1]-result_center[0][1])))
+
     if incl_frames == 0:
         mean_iou = 0
         mean_cle = 0
@@ -270,10 +278,14 @@ def extract_min_frames(val_list, idx_list,s):
     
     values = copy.deepcopy(val_list)
     values = values.tolist()
+    if len(values) < 5:
+        num_frames = 1
+    else:
+        num_frames = 5
     indices = copy.deepcopy(idx_list)
     indices = indices.tolist()
     min_vals = []
-    for i in range(5):
+    for i in range(num_frames):
         min_loc = np.nanargmin(values)
         min_vals.append(tuple((values[min_loc][0], indices[min_loc], s)))
         del values[min_loc]
@@ -285,9 +297,13 @@ def extract_min_frames(val_list, idx_list,s):
         
 def collect_low_frames(min_list):
     
+    if len(min_list) < 5:
+        num_frames = 1
+    else:
+        num_frames = 5
     min_frames = copy.deepcopy(min_list)
     final_mins = []
-    for i in range(5):
+    for i in range(num_frames):
         min_loc = np.argmin([i[0] for i in min_frames])
         final_mins.append(tuple(min_frames[min_loc]))
         del min_frames[min_loc]

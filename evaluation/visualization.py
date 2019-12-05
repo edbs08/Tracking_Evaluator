@@ -22,12 +22,6 @@ markers = ['o', '+', 'x', '^', '.', ',', 'v',  '<', '>', 's', 'd']
 colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
 plot_list = []
 frame_list = {}
-trackers = []
-sequences = []
-challenges = []
-metrics = []
-eval_type = []
-data = {}
 
 def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
     """Calls all analysis functions allows running of analysis from interface
@@ -43,7 +37,7 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
     global challenges
     global metrics
     global eval_type
-    global data
+
     data_path = os.getcwd()
     #data_path = 'C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/'
     experiment = 'baseline'
@@ -65,7 +59,7 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
         dataMessage()
         return
     
-    AR_data = compute_ar_and_precision(data, challenges, trackers, eval_extras, metrics)
+    AR_data = compute_ar_and_precision(data, challenges, sequences, trackers, eval_extras, metrics)
     
     if 'Accuracy' in metrics and 'Robustness' in metrics:
         basic_ar_plots(AR_data)
@@ -82,12 +76,10 @@ def perform_analysis(tracks,eval_extras,eval_method,seqs,challs,mets):
         create_report("Analysis Report", AR_data, metrics)
     
     if "Display Error Frames" in eval_extras:
-        display_low_frames(AR_data)
+        display_low_frames(AR_data, data)
     
     visualization_html('Analysis Report', AR_data, metrics)
-    
-
-        
+           
     print('Evaluation Complete!')   
     
     return AR_data
@@ -100,28 +92,29 @@ def basic_ar_plots(data):
         challenges(list): list of strings, challenges to include
         trackers(list): list of strings, trackers to be compared
     """
-    for c in challenges:
+    for c in data.keys():
         i = 0
-        for t in trackers:
-            accuracy = (data[c][t]['tracker_acc'])
-            robustness = (data[c][t]['tracker_robust'])
-            marker = (markers[i])
-            i = i+1
-            plt.plot(robustness, accuracy, marker, markersize = 8, label = t)
-        plt.xlabel('Robustness')
-        plt.xlim([0,1.1])
-        plt.ylabel('Accuracy') 
-        plt.ylim([0,1.1]) 
-        plt.title('AR_%s'%c)
-        plt.legend()
-        plt.grid(b=True, which='major', linestyle='-')
-        plt.xticks(np.arange(0,1.2,0.2))
-        plt.yticks(np.arange(0,1.2,0.1))
-        filename = "AR_%s.png" %c
-        plot_list.append(filename)
-        plt.savefig(filename)
-        plt.close()
-    
+        if data[c]:
+            for t in data[c].keys():
+                accuracy = (data[c][t]['tracker_acc'])
+                robustness = (data[c][t]['tracker_robust'])
+                marker = (markers[i])
+                i = i+1
+                plt.plot(robustness, accuracy, marker, markersize = 8, label = t)
+            plt.xlabel('Robustness')
+            plt.xlim([0,1.1])
+            plt.ylabel('Accuracy') 
+            plt.ylim([0,1.1]) 
+            plt.title('AR_%s'%c)
+            plt.legend()
+            plt.grid(b=True, which='major', linestyle='-')
+            plt.xticks(np.arange(0,1.2,0.2))
+            plt.yticks(np.arange(0,1.2,0.1))
+            filename = "AR_%s.png" %c
+            plot_list.append(filename)
+            plt.savefig(filename)
+            plt.close()
+        
     return
 
 def robustness_plots(data):
@@ -136,49 +129,87 @@ def robustness_plots(data):
     """
     i = 0
     for t in trackers:
-        challenges = data.keys()
         failcount = []
-        for c in challenges:
-            failcount.append(data[c][t]['tracker_failcount'])
-          # failcount = data[c][t]['tracker_failcount']
-        plt.plot(challenges, failcount, '--', color = colors[i], marker = markers[i], markersize = 8,  label = t)
+        j = 0
+        if eval_type == ['sequence']:
+            for c in challenges:
+                if data[c]:
+                    if data[c][t]:
+                        failcount = []
+                        sequences_inc = []
+                        for s in sequences:
+                            if s in data[c][t].keys():
+                                failcount.append(data[c][t][s]['failures_per_sequence'])
+                                sequences_inc.append(s)
+                        if len(sequences_inc) > 0:
+                            plt.scatter(sequences_inc, failcount, color = colors[i], marker = markers[j], s = 200,  label = t + ':' + c)
+                        else:
+                            print('Insufficient data for robustness plots with selection')
+                        j = j + 1
+        elif eval_type == ['challenge']:
+            challs = []
+            for c in challenges:
+                if data[c]:
+                    if data[c][t]:
+                        challs.append(c)
+                        failcount.append(data[c][t]['tracker_failrate'])
+                  # failcount = data[c][t]['tracker_failcount']
+            if len(challs) > 0:
+                plt.plot(challs, failcount, '--', color = colors[i], marker = markers[i], markersize = 10,  label = t)
+            else:
+                print("Insufficient data for robustness plots with selection")
+                return
            #plt.plot(c, failcount, label = t)
         i = i+1
-    plt.legend()
-    plt.xlabel('Challenge')
-    plt.ylabel('Total failures')
-    plt.title('Fail Count')
+    plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.xlabel(eval_type[0])
+    plt.ylabel('Failure Rate')
+    plt.grid(b=True, which='major', linestyle='-')
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
-    filename = "Failcount.png"
-    plot_list.append(filename)
+    filename = "Failure Rate.png"
     fig.savefig(filename)
+    plot_list.append(filename)
     plt.close()
     
 def accuracy_plots(data):
 
     i = 0
     for t in trackers:
-        j = 0
         if eval_type == ['sequence']:
+            j = 0
             for c in challenges:
-                accuracy = []
-                sequences_inc = []    
-                for s in sequences:
-                    if s in data[c][t].keys():
-                        accuracy.append(data[c][t][s]['sequence_acc'])
-                        sequences_inc.append(s)
-                plt.scatter(sequences_inc, accuracy, marker = markers[j], color = colors[i], s = 100, label = t + ":" + c)
-                j += 1
+                if data[c]:
+                    if data[c][t]:
+                        accuracy = []
+                        sequences_inc = []    
+                        for s in sequences:
+                            if s in data[c][t].keys():
+                                accuracy.append(data[c][t][s]['sequence_acc'])
+                                sequences_inc.append(s)
+                        if len(sequences_inc) > 0:
+                            plt.scatter(sequences_inc, accuracy, marker = markers[j], color = colors[i], s = 200, label = t + ":" + c)
+                        else:
+                            print('Insufficient data for accuracy plots with selection')
+                        j += 1
         elif eval_type == ['challenge']:
             accuracy = []
+            challs = []
             for c in challenges:
-                accuracy.append(data[c][t]['tracker_acc'])
-            plt.scatter(challenges, accuracy, marker = markers[i], s = 100, label = t )
+                if data[c]:
+                    if data[c][t]:
+                        challs.append(c);
+                        accuracy.append(data[c][t]['tracker_acc'])
+            if len(challs) > 0:
+                plt.scatter(challs, accuracy, marker = markers[i], s = 200, label = t )
+            else:
+                print("Insufficient data for accuracy plots with selection")
+                return
         i += 1
     plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.xlabel(eval_type[0])
     plt.ylabel('Accuracy')
+    plt.grid(b=True, which='major', linestyle='-')
     plt.title('Average Overlap')
     fig = plt.gcf()
     fig.set_size_inches(22.5, 10.5)
@@ -196,24 +227,79 @@ def cle_plots(data):
         trackers(list): list of strings, trackers to be compared
         sequences(list): list of strings, sequences to include
     """
-    width = min(0.1, 1/(len(trackers)+1))
-    pos = np.arange(len(challenges))
-    for t in trackers:
-        cle = []
+    
+    width = min(0.2, 1/(len(trackers)+1))  
+    valid = 0
+    if eval_type == ['sequence']:
+        pos = np.arange(len(sequences))
+#        pos = pos_s
         for c in challenges:
-                cle.append(data[c][t]['tracker_precision'])
-        plt.barh(pos, cle, width, label = t)
-        pos = pos + width
-    plt.yticks([r + width for r in range(len(pos))], challenges)
-    plt.legend()
-    plt.xlabel('Center Location Error')
-    plt.ylabel('Challenge')
-    fig = plt.gcf()
-    fig.set_size_inches(15, 10.5)
-    filename = "Precision.png"
-    plot_list.append(filename)
-    plt.savefig(filename)
-    plt.close()
+                if data[c]:
+#                    width = 0
+                    for t in trackers:
+                        cle = []
+                        if data[c][t]:
+                            sequences_inc = []
+                            for s in sequences:
+                                    if s in data[c][t].keys():
+                                        valid = 1
+                                        cle.append(data[c][t][s]['sequence_precision'])
+#                                        sequences_inc.append(s)
+                                    else:
+                                        cle.append(0)
+#                            if len(sequences_inc) > 0:
+#                                pos = np.arange(len(sequences_inc))+width
+                            plt.barh(pos, cle, width, label = t)
+                            pos = pos + width
+#                            labels = sequences_inc
+                    if valid == 1:
+                        plt.yticks([r + width for r in range(len(pos))], sequences)
+                        plt.legend()
+                        plt.xlabel('Center Location Error')
+                        plt.ylabel('Sequence')
+                        plt.title('Precision for Challenge: %s'%c)
+                        fig = plt.gcf()
+                        fig.set_size_inches(15, 10.5)
+                        filename = "Precision%s.png"%c
+                        plot_list.append(filename)
+                        plt.savefig(filename)
+                        plt.close()
+        if valid == 0:
+            print('Insufficient data for Precision plots')
+            return
+    elif eval_type == ['challenge']:
+#        width = 0
+        pos = np.arange(len(challenges))
+        for t in trackers:
+            cle = []
+            challs = []
+            for c in challenges:
+                if data[c]:
+                    if data[c][t]:
+                        cle.append(data[c][t]['tracker_precision'])
+                        valid = 1
+#                        challs.append(c)
+                    else:
+                        cle.append(0)
+                
+#                pos = np.arange(len(challens)) + width
+            plt.barh(pos, cle, width, label = t)
+            pos = pos + width
+#                labels = challs
+    if valid == 1:
+        plt.yticks([r + width for r in range(len(pos))], challenges)
+        plt.legend()
+        plt.xlabel('Center Location Error')
+        plt.ylabel('Challenge')
+        fig = plt.gcf()
+        fig.set_size_inches(15, 10.5)
+        filename = "Precision.png"
+        plot_list.append(filename)
+        plt.savefig(filename)
+        plt.close()
+    else:
+        print('Insufficient data for Precision Plots')
+        return
 
 
 def visualization_html(header, data, metrics):
@@ -253,16 +339,17 @@ def visualization_html(header, data, metrics):
                     for c in challenges:
                         with tags.tr(): #New row Challenges
                             tags.td(c, style = "font-size:small;text-align:center;padding:4px")
-                        for t in data[c].keys():
-                            with tags.tr(): #New row Data per tracker
-                                tags.td(' ', style = "font-size:small;text-align:center;padding:4px")
-                                tags.td(t, style = "font-size:small;text-align:center;padding:4px")
-                                if 'Accuracy' in metrics:
-                                    tags.td(data[c][t]['tracker_acc'], style = "font-size:small;text-align:center;padding:4px")
-                                if 'Robustness' in metrics:
-                                    tags.td(data[c][t]['tracker_robust'], style = "font-size:small;text-align:center;padding:4px")
-                                if 'Precision(Center Location Error)' in metrics:
-                                    tags.td(data[c][t]['tracker_precision'], style = "font-size:small;text-align:center;padding:4px")
+                        for t in trackers:
+                            if data[c][t]:
+                                with tags.tr(): #New row Data per tracker
+                                    tags.td(' ', style = "font-size:small;text-align:center;padding:4px")
+                                    tags.td(t, style = "font-size:small;text-align:center;padding:4px")
+                                    if 'Accuracy' in metrics:
+                                        tags.td(data[c][t]['tracker_acc'], style = "font-size:small;text-align:center;padding:4px")
+                                    if 'Robustness' in metrics:
+                                        tags.td(data[c][t]['tracker_robust'], style = "font-size:small;text-align:center;padding:4px")
+                                    if 'Precision(Center Location Error)' in metrics:
+                                        tags.td(data[c][t]['tracker_precision'], style = "font-size:small;text-align:center;padding:4px")
         with div():
             h2('Graphs')
             for graph in plot_list:
@@ -271,48 +358,50 @@ def visualization_html(header, data, metrics):
                 
         if frame_list:
                 for c in challenges:
-                    for t in trackers:
-                        with figure():
-                            h3('Low Frames for tracker: %s'%t + ' challenge: %s'%c)
-                            for i in range(5):
-                                tags.img(src = frame_list[c][t][i][0], style="width:340px;margin-top: 50px")
-                                tags.i(frame_list[c][t][i][1])
+                    if frame_list[c]:
+                        for t in frame_list[c].keys():
+                            with figure():
+                                h3('Low Frames for tracker: %s'%t + ' challenge: %s'%c)
+                                for i in range(len(frame_list[c][t])):
+                                    tags.img(src = frame_list[c][t][i][0], style="width:340px;margin-top: 50px")
+                                    tags.i(frame_list[c][t][i][1])
                                 
             
 
     f= open(os.getcwd()+'/evaluation_results'+'.html', 'w')
     f.write(doc1.render())
     f.close()
-    print(doc1.render())
+#    print(doc1.render())
     
-def display_low_frames(AR_data):
+def display_low_frames(AR_data, data):
     if not os.path.isdir('low frames'):
         os.mkdir('low frames')
     
-    for c in challenges:
-        frame_list[c] = {}
-        for t in trackers:
-            fig = []
-            for i in range(5):
-                fig_name = '00000000'
-                s = AR_data[c][t]['min_acc_frames'][i][2]
-                idx = AR_data[c][t]['min_acc_frames'][i][1]
-                fig_path = os.path.join('sequences',s,'color')
-                if os.path.isdir(fig_path):
-                    frame_num = str(AR_data[c][t]['min_acc_frames'][i][1] + 1)
-                    fig_length = len(frame_num)
-                    fig_name = fig_name[fig_length:] + frame_num + '.jpg'
-                    fig_path = os.path.join(fig_path, fig_name)
-                    
-                    gt = data[t][s]['groundtruth'][idx]
-                    result = data[t][s]['output'][idx]
-                    
-                    fig_name = '%s_'%c + '%s_'%t + '%s_'%s + '%s.jpg'%frame_num
-                    img = draw_bbox_fig(fig_name, fig_path, gt, result)
-                    cv2.imwrite(os.path.join('low frames',fig_name), img)
-                    
-                    fig.append(tuple((os.path.join('low frames',fig_name), '%s_'%s + '%s'%frame_num)))
-            frame_list[c][t] = fig
+    for c in AR_data.keys():
+        if AR_data[c]:
+            frame_list[c] = {}
+            for t in AR_data[c].keys():
+                fig = []
+                for i in range(len(AR_data[c][t]['min_acc_frames'])):
+                    fig_name = '00000000'
+                    s = AR_data[c][t]['min_acc_frames'][i][2]
+                    idx = AR_data[c][t]['min_acc_frames'][i][1]
+                    fig_path = os.path.join('sequences',s,'color')
+                    if os.path.isdir(fig_path):
+                        frame_num = str(AR_data[c][t]['min_acc_frames'][i][1] + 1)
+                        fig_length = len(frame_num)
+                        fig_name = fig_name[fig_length:] + frame_num + '.jpg'
+                        fig_path = os.path.join(fig_path, fig_name)
+                        
+                        gt = data[t][s]['groundtruth'][idx]
+                        result = data[t][s]['output'][idx]
+                        
+                        fig_name = '%s_'%c + '%s_'%t + '%s_'%s + '%s.jpg'%frame_num
+                        img = draw_bbox_fig(fig_name, fig_path, gt, result)
+                        cv2.imwrite(os.path.join('low frames',fig_name), img)
+                        
+                        fig.append(tuple((os.path.join('low frames',fig_name), '%s_'%s + '%s'%frame_num)))
+                frame_list[c][t] = fig
             
 def draw_bbox_fig(fig_name,fig_path, gt, result):
     img = cv2.imread(fig_path)
@@ -352,7 +441,7 @@ class sequenceMessage(QWidget):
     def sequence_limit(self):
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle(self.title)
-        choice = QMessageBox.question(self, 'Message:',  "Please select up to 8 sequences for by sequence report.", QMessageBox.Ok)
+        choice = QMessageBox.question(self, 'Message:',  "Please select up to 10 sequences for by sequence report.", QMessageBox.Ok)
         if choice == QMessageBox.Ok:
             return
         else:
