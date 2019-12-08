@@ -277,11 +277,11 @@ def define_polygon(x):
 def extract_min_frames(val_list, idx_list,s):
     
     values = copy.deepcopy(val_list)
-    values = values.tolist()
-    if len(values) < 5:
+    if len(values[~np.isnan(values)]) < 5:
         num_frames = 1
     else:
         num_frames = 5
+    values = values.tolist()
     indices = copy.deepcopy(idx_list)
     indices = indices.tolist()
     min_vals = []

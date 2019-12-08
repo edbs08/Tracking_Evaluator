@@ -8,8 +8,7 @@ Created on Tue Nov 12 11:52:26 2019
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import stat
+import os, shutil
 import cv2
 from evaluation.data import *
 from evaluation.metrics import *
@@ -374,8 +373,9 @@ def visualization_html(header, data, metrics):
 #    print(doc1.render())
     
 def display_low_frames(AR_data, data):
-    if not os.path.isdir('low frames'):
-        os.mkdir('low frames')
+    if os.path.isdir('low frames'):
+       shutil.rmtree('low frames') 
+    os.mkdir('low frames')
     
     for c in AR_data.keys():
         if AR_data[c]:
@@ -404,6 +404,7 @@ def display_low_frames(AR_data, data):
                 frame_list[c][t] = fig
             
 def draw_bbox_fig(fig_name,fig_path, gt, result):
+    
     img = cv2.imread(fig_path)
     
     if len(gt) > 4:
@@ -412,7 +413,7 @@ def draw_bbox_fig(fig_name,fig_path, gt, result):
     else: 
         
         cv2.rectangle(img, (int(gt[0]), int(gt[1])), (int(gt[0]) + int(gt[2]),
-                            int(gt[1])+int(gt[3])), (255,0,0), 2)
+                            int(gt[1])+int(gt[3])), (0,255,0), 2)
     if len(result) > 4:
         result_pts = np.array([[result[0], result[1]], [result[2], result[3]],[result[4], result[5]],
                            [result[6], result[7]]], np.int32)
