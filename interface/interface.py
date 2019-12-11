@@ -116,21 +116,19 @@ class trackerApp(QDialog):
         self.loadFiles.setLayout(layout)  
         
     def getfiles(self):
-        """ 
-        Load files from directory 
-        """
-       fname = QFileDialog.getOpenFileName(self, 'Open file', 
+        """   Load files from directory     """
+        fname = QFileDialog.getOpenFileName(self, 'Open file', 
          'c:\\',"Text Files (*.txt)")
-       fi = QFileInfo(fname[0])
+        fi = QFileInfo(fname[0])
 
-       global trackers_paths
-       trackers_paths.append(fname[0])
-       self.trackers_res.append(fi.baseName())
-       # update List Options
-       self.listwidget.insertItem(len(self.trackers_res),"%s" % fi.baseName())
+        global trackers_paths
+        trackers_paths.append(fname[0])
+        self.trackers_res.append(fi.baseName())
+        # update List Options
+        self.listwidget.insertItem(len(self.trackers_res),"%s" % fi.baseName())
 #       print(self.trackers_res)
-       self.listwidget.repaint()
-       self.update()
+        self.listwidget.repaint()
+        self.update()
     
         
     def createSelectTrackers(self):

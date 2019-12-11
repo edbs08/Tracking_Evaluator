@@ -1,8 +1,12 @@
 
 """
-Created on Sat Oct 19 11:00:41 2019
+Visual video tracker evaluator 
+    test.py
+    Testing framework for the evaluation module
 
-@author: Frances
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 
 from evaluation.data import *
