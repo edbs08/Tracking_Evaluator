@@ -1,6 +1,7 @@
-Shapely:
-conda config --add channels conda-forge
-conda install shapely
-PyLaTeX:
-conda install -c auto pylatex
-
+pip install wget
+pip install Shapely
+pip install pyhtgen
+pip3 install --user pyqt5 
+pip install --user scipy
+sudo apt-get install python-opencv
+pip install PyLaTeX

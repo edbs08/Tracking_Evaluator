@@ -212,7 +212,13 @@ def download_VOT_trackers(version):
     
     with zipfile.ZipFile(file_name) as z:
          z.extractall('trackers')
-    
+
+    for file in os.listdir(tracker_path): 
+         if file.endswith(".zip"):
+             with zipfile.ZipFile(os.path.join(tracker_path, file)) as z:
+                 z.extractall('trackers')
+                 os.remove(os.path.join(tracker_path,file))
+   
     print("Download Complete")
     return
 
@@ -324,27 +330,7 @@ def download_OTB():
                          for i in range(gt.shape[0]):
                              f.write(str(1) + '\n')
                      f.close()
-#                 if s in sequences_sc:
-#                     f= open(os.path.join(s_path, "size_change.tag"),"w+")
-#                     for i in range(gt.shape[0]):
-#                         f.write(str(1) + '\n')
-#                     f.close()
-#                 if s in sequences_occ:
-#                     f= open(os.path.join(s_path, "occlusion.tag"),"w+")
-#                     for i in range(gt.shape[0]):
-#                         f.write(str(1) + '\n')
-#                     f.close()
-#                 if s in sequences_mc:
-#                     f= open(os.path.join(s_path, "motion_change.tag"),"w+")
-#                     for i in range(gt.shape[0]):
-#                         f.write(str(1) + '\n')
-#                     f.close()
-#                 if s in sequences_cm:
-#                     f= open(os.path.join(s_path, "camera_motion.tag"),"w+")
-#                     for i in range(gt.shape[0]):
-#                         f.write(str(1) + '\n')
-#                     f.close()                     
-#            
+
              otb_out = mat_read['results'][0]
              if len(otb_out[0].item(0)[0]) < 2:
                  otb_out = otb_out[0].item(0)[1]
@@ -385,7 +371,7 @@ class downloadMessage(QWidget):
         if choice == QMessageBox.Yes:
             print('Continuing download')
         else:
-            return
+            sys.exit()
         
 class downloadData(QWidget):
     """Class created to ask user about downloading data

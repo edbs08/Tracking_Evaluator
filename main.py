@@ -4,8 +4,11 @@ Created on Wed Oct 23 18:11:53 2019
 
 @author: Daniel
 """
+
 from evaluation.data import data_download
 from interface.interface import interface_main
+from PyQt5.QtWidgets import QApplication
+import sys
 import os.path
 #
 #def main():
@@ -16,9 +19,10 @@ def read_workspace(data_path=os.getcwd()):
     #so once we read in file we check what trackers and sequences are available to compare/use
     
     if not os.path.isdir(os.path.join(data_path, 'trackers')) or not os.listdir(os.path.join
-        (data_path, 'trackers')) or not os.path.isdir(os.path.join(data_path, 'sequences')) or not os.listdir(os.path.join
-        (data_path, 'sequences')):
+        (data_path, 'trackers')) or not os.path.isdir(os.path.join(data_path, 'sequences')) or not    		os.listdir(os.path.join(data_path, 'sequences')):
+        app = QApplication(sys.argv)
         data_download()
+	
         
 #        or if not os.listdir(os.path.join(data_path, 'trackers')):
         

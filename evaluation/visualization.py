@@ -415,7 +415,7 @@ def fragmentation_analysis(data):
                                 plt.ylabel('Pass/Fail')
                                 fig = plt.gcf()
                                 fig.set_size_inches(12.5, 6.5)
-                                filename = os.path.join("Fragmentation", "Fragmentation'{0}''{1}''{2}'.png".format(c,t,s))
+                                filename = os.path.join("fragmentation", "Fragmentation'{0}''{1}''{2}'.png".format(c,t,s))
                                 fig.savefig(filename)
                                 plot_list.append(filename)
                                 plt.close()
