@@ -1,0 +1,10 @@
+sequences/
+trackers/
+*.png
+!IPCV_logo.PNG
+*.html
+*.tex
+*.pyc
+*.ini
+*.jpg
+fragmentation/
