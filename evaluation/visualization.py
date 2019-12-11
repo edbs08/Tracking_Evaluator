@@ -2,6 +2,7 @@
 """
 Visual video tracker evaluator 
     visualization.py
+    Contains functions for visualization purposes. 
 
 @authors: 
     E Daniel Bravo S
@@ -557,9 +558,9 @@ def display_low_frames(AR_data, data):
         AR_data(dictionary): dictionary containing output from metrics calculation should include accuracy metrics
         data(dictionary): dictionary containing original information loaded from workspace to allow loading of figures
     """
-    if os.path.isdir('low frames'):
-       shutil.rmtree('low frames') 
-    os.mkdir('low frames')
+    if os.path.isdir('low_frames'):
+       shutil.rmtree('low_frames') 
+    os.mkdir('low_frames')
     
     for c in AR_data.keys():
         if AR_data[c]:
@@ -583,9 +584,9 @@ def display_low_frames(AR_data, data):
                             
                             fig_name = '%s_'%c + '%s_'%t + '%s_'%s + '%s.jpg'%frame_num
                             img = draw_bbox_fig(fig_path, gt, result)
-                            cv2.imwrite(os.path.join('low frames',fig_name), img)
+                            cv2.imwrite(os.path.join('low_frames',fig_name), img)
                             
-                            fig.append(tuple((os.path.join('low frames',fig_name), '%s_'%s + '%s'%frame_num)))
+                            fig.append(tuple((os.path.join('low_frames',fig_name), '%s_'%s + '%s'%frame_num)))
                     frame_list[c][t] = fig
                 
 def draw_bbox_fig(fig_path, gt, result):

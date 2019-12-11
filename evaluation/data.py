@@ -2,6 +2,7 @@
 """
 Visual video tracker evaluator 
     data.py
+    Used for load, manipulation and display of the data.
 
 @authors: 
     E Daniel Bravo S

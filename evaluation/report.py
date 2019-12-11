@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Nov 17 14:09:18 2019
+Visual video tracker evaluator 
+    report.py
+    Generate report of the evaluation. 
+    Formats currently available:
+        Latex
 
-@author: Frances
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 
 

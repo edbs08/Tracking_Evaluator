@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov 12 10:28:02 2019
+Visual video tracker evaluator 
+    metrics.py
+    File used to compute the metrics of the evaluation
 
-@author: Frances
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 
 import numpy as np

@@ -2,6 +2,7 @@
 """
 Visual video tracker evaluator 
     interface.py
+    Creates the user's interface of the evaluator
 
 @authors: 
     E Daniel Bravo S
@@ -262,7 +263,7 @@ class trackerApp(QDialog):
     def check_eval_type(self):
         """
         Limit options available depending on the evaluation type
-        -Functionality currently not active
+        - Functionality currently not active
         """
 #        if (self.radioButton2.isChecked()):
 #             self.sequences.setEnabled(False)
