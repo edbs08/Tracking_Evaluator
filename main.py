@@ -4,7 +4,7 @@ Created on Wed Oct 23 18:11:53 2019
 
 @author: Daniel
 """
-import evaluation
+from evaluation.data import data_download
 from interface.interface import interface_main
 import os.path
 #
@@ -14,7 +14,15 @@ import os.path
 def read_workspace(data_path=os.getcwd()):
     #This function is to take the data from the dataset that the user provides
     #so once we read in file we check what trackers and sequences are available to compare/use
-
+    
+    if not os.path.isdir(os.path.join(data_path, 'trackers')) or not os.listdir(os.path.join
+        (data_path, 'trackers')) or not os.path.isdir(os.path.join(data_path, 'sequences')) or not os.listdir(os.path.join
+        (data_path, 'sequences')):
+        data_download()
+        
+#        or if not os.listdir(os.path.join(data_path, 'trackers')):
+        
+        
     trackers_all = os.listdir(data_path + '/trackers')
     sequences_all = os.listdir(data_path + '/sequences')
     

@@ -5,10 +5,21 @@ Created on Sun Nov 17 14:09:18 2019
 @author: Frances
 """
 
-from pylatex import Document, Section, Subsection, Command, LongTabu, Tabu, Center, Figure, SubFigure, NoEscape, LineBreak, UnsafeCommand
-from pylatex.utils import bold
 
 def create_report(header, data, metrics):
+    """Function creating  Latex report of analysis if selected by user
+    
+    Args:
+        
+        header(string): title for report
+        data(dictionary): output data from calculation of metrics
+        metrics(list): metrics selection from user
+    """
+    # Importing these libraries here so that these are 'optional' dependencies only required if user 
+    # wants to use these functionalities
+    from pylatex import Document, Section, Command, LongTabu, Figure, SubFigure, NoEscape
+    from pylatex.utils import bold
+    
     challenges = data.keys()
     
     geometry_options = {

@@ -12,7 +12,6 @@ import copy
 from shapely.geometry import Polygon, box
 from math import exp, sqrt, log
 
-lowest_seqs = {}
 
 def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, metrics):
     """Calculates and collects accuracy, robustness and precision as selected
@@ -21,6 +20,9 @@ def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, 
         data (dict): dictionary of dictionaries containing froundtruth and result
             data loaded for each tracker and sequence. Also includes tags loaded for challenges.
         challenge (list): list of strings - challenges to be assessed in this evaluation
+        sequences(list): list of strings- sequences to be used in evaluation
+        trackers(list): list of strings - trackers to be compared
+        eval_extras(list): list of strings- if low frame search needed
         metrics (list): list of strings - metrics to be calculated during this evaluation
     
     Returns: 
@@ -56,15 +58,16 @@ def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, 
                     gt_bboxes = np.array(data[t][s]['groundtruth'][:][:])                    
                     result_bboxes = np.array(data[t][s]['output'][:][:])
                     
-                    if 'Accuracy' in metrics or 'Precision(Center Location Error)' in metrics:
-                        accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics)
+                    accuracy, mean_seq_acc, cle, mean_seq_cle = compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics)
                     if 'Accuracy' in metrics or 'Robustness' in metrics:
                         seq_acc_sum = seq_acc_sum + mean_seq_acc
                         AR_data[c][t][s]['acc_per_frame'] = accuracy
                         AR_data[c][t][s]['sequence_acc'] = mean_seq_acc
                         accuracy_list = np.append(accuracy_list, accuracy[~np.isnan(accuracy)])
                         if "Display Error Frames" in eval_extras:
-                            min_acc_frames.extend(extract_min_frames(accuracy, frame_idx, s))
+                            min_frames = extract_min_frames(accuracy, frame_idx, s)
+                            if min_frames != None:
+                                min_acc_frames.extend(min_frames)
                     if 'Robustness' in metrics:
                         failures, f_i = count_failures(accuracy, result_bboxes, challenge_mask, s)
                         AR_data[c][t][s]['failures_per_sequence'] = failures
@@ -75,19 +78,16 @@ def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, 
                         fail_count = fail_count + failures
                     if 'Precision(Center Location Error)' in metrics:
                         AR_data[c][t][s]['precision_per_frame'] = cle
-#                        cle_list = np.append(cle_list, cle[cle!=0])
                         cle_list = np.append(cle_list, cle)
                         AR_data[c][t][s]['sequence_precision'] = mean_seq_cle
-                        
-                else:
-                    print("The chosen sequence:", s, "does not contain examples of challenge: ", c, 'for tracker: ', t)
-                    
-                    
+                     
             if valid_seq != 0:
                 if 'Accuracy' in metrics:
                     AR_data[c][t]['tracker_acc'] = round(np.mean(np.array(accuracy_list)),4)
                     if "Display Error Frames" in eval_extras: 
-                        AR_data[c][t]['min_acc_frames'] =  collect_low_frames(min_acc_frames)
+                        low_frames = collect_low_frames(min_acc_frames)
+                        if low_frames != None:
+                            AR_data[c][t]['min_acc_frames'] =  low_frames
                 if 'Robustness' in metrics:
                     AR_data[c][t]['tracker_failcount'] = fail_count
                     AR_data[c][t]['tracker_failrate'] = round(fail_count/length,4)
@@ -96,8 +96,6 @@ def compute_ar_and_precision(data, challenge, sequences, trackers, eval_extras, 
                     AR_data[c][t]['tracker_precision'] = round(np.mean(np.array(cle_list)),4)
             else:
                 print("No data available with these sequences for challenge: ", c)
-#                del AR_data[c][t]
-
                     
     return AR_data
     
@@ -147,7 +145,8 @@ def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics):
     Args:
         gt_bboxes (list): list of floats of length 4 or 8 containing groundtruth polygon
         result_bboxes (list): list of floats of length 4 or 8 containing result polygon
-        challenge_mask (boolean list): for including only relevant frames
+        frame_idx (list of indices): for including only relevant frames of selected challenge
+        metrics(list): list of strings of metrics to be calculated - in this case precision and/or accuracy
     
     Returns: 
         iou (list): overlap for each frame of sequence
@@ -179,9 +178,8 @@ def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics):
         result_poly = define_polygon(result[i][:])
         
         eps = np.finfo(float).eps
-        if 'Accuracy' in metrics:
+        if 'Accuracy' in metrics or 'Robustness' in metrics:
             iou[i, :] = round(gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps),4)
-    #        iou[i, :] = gt_poly.intersection(result_poly).area/(gt_poly.union(result_poly).area + eps)
             iou = np.clip(iou, 0.0, 1.0)
         
         if 'Precision(Center Location Error)' in metrics:
@@ -196,7 +194,6 @@ def compute_iou_and_cle(gt_bboxes, result_bboxes, frame_idx, metrics):
         mean_cle = 0
     else:
         mean_iou = round(np.sum(iou[~np.isnan(iou)])/incl_frames, 4)
-#        mean_iou = np.sum(iou)/incl_frames
         mean_cle = round(np.sum(cle)/incl_frames,4)
         
     return iou, mean_iou, cle, mean_cle
@@ -206,7 +203,8 @@ def count_failures(acc, result, mask,s):
     """ Counts number of failures in given sequence
     
     Args: 
-        result (list): list of floats containing result polygon info
+        acc(list): list of floats containing accuracy results for calcualting non-VOT data failures
+        result (list): list of floats containing result polygon info - needed for calculating VOT data failures
         mask (list): boolean list containing challenges in each frame
     
     Returns:
@@ -215,16 +213,20 @@ def count_failures(acc, result, mask,s):
     count = 0
     count1 = 0
     vot = False;
-    r1 = result[mask == 1]
+    length = min(len(mask), len(result))
+    if len(result.shape) > 1:
+        r1 = result[:length, :][mask == 1]
+    else:
+        r1 = result[:length][mask == 1]
     f_i1 = []
     f_i = []
     
     for i in range(len(r1)):
-        if r1[i] == [2.0]:
+        if all(np.array(r1[i]) == [2.0]):
             vot = True
             f_i1.append(i)
             count1 += 1
-        if acc[i] == [0]:
+        if acc[i] == [0] or acc[i] == 0:
             if i > 0 and acc[i-1] != [0]:
                 f_i.append(i)
                 count += 1
@@ -236,6 +238,16 @@ def count_failures(acc, result, mask,s):
         return count, f_i
     
 def calc_fragment(fail_count, f_i, N):
+    """ Function for calculating fragmentation information where sequence failures were > 1
+    
+    Args:
+        fail_count(int): number of failures from sequence
+        f_i(list): list of ints with indices where failures occurred
+        N(int): length of sequence
+    
+    Returns:
+        Tuple containing fragmentation information
+    """
     
     frag = 0
     for i in range(fail_count):
@@ -247,7 +259,9 @@ def calc_fragment(fail_count, f_i, N):
     
     frag = frag/log(fail_count)
     
-    return frag
+    frag_tup = tuple((frag, f_i, N))
+    
+    return frag_tup
         
     
 def define_polygon(x):
@@ -261,23 +275,31 @@ def define_polygon(x):
     """
     if len(x) == 4:
         return box(round(x[0]), round(x[1]), round(x[0])+round(x[2]), round(x[1])+round(x[3]))
-#        return box(x[0], x[1], x[2], x[3])
-#        return box(floor(x[0]), floor(x[1]), floor(x[0]) + ceil(x[2]), floor(x[1]) + ceil(x[3]))
+
     if len(x) == 8:
         return Polygon([(round(x[0]), round(x[1])), (round(x[2]), round(x[3])), (round(x[4]), round(x[5])), (round(x[6]), round(x[7]))])
-#        return Polygon([(floor(x[0]), floor(x[1])), 
-#                        (ceil(x[2]), floor(x[3])), 
-#                        (ceil(x[4]), ceil(x[5])), 
-#                        (floor(x[6]), ceil(x[7]))])
-#        return Polygon([(x[0], x[1]), (x[2], x[3]), (x[4], x[5]), (x[6], x[7])])
+
     else:
         print('Groundtruth or output result incorrect shape')
         return None
     
 def extract_min_frames(val_list, idx_list,s):
+    """Function for extracting minimum frames from given sequence
+    
+    Args:
+        val_list(list): list of floats- overlap values
+        idx_list(list): list of ints - frame indices
+        s(string): name of sequence
+    
+    Returns:
+        Tuple of low-frame search information
+    """
     
     values = copy.deepcopy(val_list)
-    if len(values[~np.isnan(values)]) < 5:
+    length = len(values[~np.isnan(values)])
+    if length == 0:
+        return None
+    elif length < 5:
         num_frames = 1
     else:
         num_frames = 5
@@ -296,8 +318,17 @@ def extract_min_frames(val_list, idx_list,s):
     
         
 def collect_low_frames(min_list):
+    """Function to collect low-performing frames from full evaluation
     
-    if len(min_list) < 5:
+    Args:
+        min_list(list): List containing tuples of previously collected information from low-performing frames
+        
+    Returns:
+        tuple of overall minimum performing frames
+    """
+    if  len(min_list) == 0:
+        return None
+    elif len(min_list) < 5:
         num_frames = 1
     else:
         num_frames = 5
