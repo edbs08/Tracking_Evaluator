@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Oct 19 08:25:17 2019
+Visual video tracker evaluator 
+    data.py
 
-@author: Frances
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 import wget
 import os
@@ -16,7 +19,9 @@ from urllib.request import urlopen
 import shutil
 
 def initialize_workspace(data_path):
-    #This is a function only required for easy testing remove for final versions!!
+    """
+    Used for unit test of the evaluation module
+    """
 
     trackers = os.listdir(data_path + '/trackers')
     sequences = os.listdir(data_path + '/sequences')

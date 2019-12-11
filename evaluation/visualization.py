@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov 12 11:52:26 2019
+Visual video tracker evaluator 
+    visualization.py
 
-@author: Frances
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 
 

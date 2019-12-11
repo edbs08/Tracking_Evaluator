@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 23 18:17:02 2019
+Visual video tracker evaluator 
+    interface.py
 
-@author: Daniel
+@authors: 
+    E Daniel Bravo S
+    Frances Ryan
 """
 
 import sys
@@ -19,8 +22,7 @@ chall_available = ["Overall","Camera Motion","Illumination Changes","Motion Chan
 metrics_available = ["Accuracy","Robustness","Precision(Center Location Error)"]
 
 #final global outputs of interface
-trackers_paths = [] #Not used anymore. here for reference
-
+trackers_paths = [] 
 trackers_results = []
 eval_extras = []
 eval_type = []
@@ -29,6 +31,12 @@ challenges_final = []
 metrics = []
 
 def interface_main(sequences,trackers):
+    """
+    Used for unit test of the interface module
+    Args:
+        sequences : list of sequences to include in the analysis
+        trackers : list of trackers to include in the analysis
+    """
     global g_sequences
     global g_trackers
     g_trackers = trackers
@@ -40,6 +48,9 @@ def interface_main(sequences,trackers):
 
 
 class trackerApp(QDialog):
+    """
+    Class to define the Evaluator widget 
+    """
     def __init__(self, parent=None):
         super(trackerApp, self).__init__(parent)
         self.trackers_res=[]
@@ -75,9 +86,6 @@ class trackerApp(QDialog):
         mainLayout.addWidget(scroll2,1,0)
         mainLayout.addWidget(self.evalOptions, 2, 0 )
         
-        
-#        self.check_eval_type()
-        
         mainLayout.addWidget(self.evalType, 0, 1,1,2 )
         mainLayout.addWidget(scroll, 1,1 )
         mainLayout.addWidget(self.challenges, 1,2 )
@@ -85,8 +93,10 @@ class trackerApp(QDialog):
         mainLayout.addWidget(run_eval,2,2)
         self.setLayout(mainLayout)
         
-    # Function to load results files. Not used in newest version but remained for reference
     def createLoadFiles(self):
+        """ 
+        Used to load results files in white box
+        """
         self.loadFiles = QGroupBox("Load tracker Results")
         
         self.listwidget = QListWidget()
@@ -105,6 +115,9 @@ class trackerApp(QDialog):
         self.loadFiles.setLayout(layout)  
         
     def getfiles(self):
+        """ 
+        Load files from directory 
+        """
        fname = QFileDialog.getOpenFileName(self, 'Open file', 
          'c:\\',"Text Files (*.txt)")
        fi = QFileInfo(fname[0])
@@ -120,6 +133,9 @@ class trackerApp(QDialog):
     
         
     def createSelectTrackers(self):
+        """ 
+        Create the tracker list box 
+        """
         self.trackerList = QGroupBox("Add trackers in the analysis")
 
         layout = QVBoxLayout()
@@ -137,6 +153,9 @@ class trackerApp(QDialog):
         self.trackerList.setLayout(layout)
         
     def createEvalOptions(self):
+        """
+        List the evaluation options
+        """
         self.evalOptions = QGroupBox("Select Evaluation Extras")
         
         self.CheckBox_eval_op = []
@@ -151,6 +170,9 @@ class trackerApp(QDialog):
         
         
     def createEvalType(self):
+        """ 
+        List evaluation type options
+        """
         self.evalType = QGroupBox("Define type of Results")
         
         self.radioButton1 = QRadioButton("Per sequence")
@@ -165,6 +187,9 @@ class trackerApp(QDialog):
         self.evalType.setLayout(layout) 
         
     def createSequenceList(self):
+        """
+        List the sequences available for analysis
+        """
         self.sequences = QGroupBox("Sequences available")
         
         layout = QVBoxLayout()
@@ -185,6 +210,9 @@ class trackerApp(QDialog):
         self.sequences.setLayout(layout) 
     
     def selectAllSeq(self):
+        """
+        Method to select all options available
+        """
         flag = False
         if self.CheckBox_seq[0].isChecked():
             flag = True
@@ -194,6 +222,9 @@ class trackerApp(QDialog):
             
         
     def createChallengeList(self):
+        """
+        List challenges available
+        """
         self.challenges = QGroupBox("Challenges")
         
         self.CheckBox_chall = []
@@ -209,6 +240,9 @@ class trackerApp(QDialog):
         self.challenges.setLayout(layout) 
     
     def createMetricsList(self):
+        """
+        List the metrics available for analysis
+        """
         self.metrics = QGroupBox("Metrics")
         
         self.CheckBox_metr = []
@@ -226,6 +260,10 @@ class trackerApp(QDialog):
         
         
     def check_eval_type(self):
+        """
+        Limit options available depending on the evaluation type
+        -Functionality currently not active
+        """
 #        if (self.radioButton2.isChecked()):
 #             self.sequences.setEnabled(False)
 #        else:
@@ -240,6 +278,9 @@ class trackerApp(QDialog):
         return
         
     def clearTrackers(self):
+        """
+        Clear trackers in selection box
+        """
         global trackers_paths
         self.listwidget.clear()
         self.trackers_res.clear()
@@ -249,6 +290,10 @@ class trackerApp(QDialog):
         
         
     def passEvaluatorConfig(self):
+        """
+        Function to comunicate with the evaluation module
+        Pass the configuration acquired by the interface
+        """
         #call callback for the evaluator
         self.update_global_current_state()
         print("Start Evaluation")
@@ -260,19 +305,14 @@ class trackerApp(QDialog):
         global challenges_final
         global metrics
         
-#        ******************** Insert Frances function here
-#        it should receive 6 parameters
-#        example:
-#        perform_analysis(trackers_results,eval_extras,eval_type,sequences_final,challenges_final,metrics)
-#       Note: I have manually included input to data path, this may not be a necessary input if we just make directory a requirement
-#       But didn't want to copy all sequences into this directory.
-#       Also still need to add eval_type functionality for by sequence so left that out for now.
-        
-        #perform_analysis('C:/Users/Frances/Documents/UBr/TRDP/PythonCode/WorkingFolder/Dataset', trackers_results,eval_type, sequences_final, challenges_final, metrics)
         perform_analysis(trackers_results,eval_extras,eval_type,sequences_final,challenges_final,metrics)
+        
         return
     
     def update_global_current_state(self):
+        """
+        Update global variables for sending to evaluator
+        """
         global trackers_results
         global eval_extras
         global eval_type
@@ -319,6 +359,7 @@ class trackerApp(QDialog):
             if mtr.isChecked():
                 metrics.append(mtr.text())
         
+        """Uncomment for verbose"""
 #        print('*****************')
 #        print(trackers_results)
 #        print(eval_extras)

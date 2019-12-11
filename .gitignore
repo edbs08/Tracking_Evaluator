@@ -1,10 +1,11 @@
-sequences/
-trackers/
+sequences/*
+trackers/*
+__pycache__/
 *.png
 !IPCV_logo.PNG
 *.html
 *.tex
 *.pyc
-*.ini
+
 *.jpg
 fragmentation/
